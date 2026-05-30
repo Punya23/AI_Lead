@@ -16,11 +16,13 @@ from app.core.database import get_async_session
 from app.models.lead import Lead
 from app.services.validation import generate_payload_hash, validate_lead
 from app.tasks.lead_pipeline import process_lead
+from app.core.rate_limiter import limiter
 
 router = APIRouter(prefix="/api/v1", tags=["Webhooks"])
 
 
 @router.post("/webhooks/lead", status_code=202)
+@limiter.limit("60/minute")
 async def receive_webhook(
     request: Request,
     db: AsyncSession = Depends(get_async_session),

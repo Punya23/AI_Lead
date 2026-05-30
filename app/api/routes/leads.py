@@ -12,7 +12,7 @@ import io
 from datetime import datetime, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile
 from loguru import logger
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,13 +29,16 @@ from app.schemas.lead import (
 )
 from app.services.validation import generate_payload_hash, validate_lead
 from app.tasks.lead_pipeline import process_lead
+from app.core.rate_limiter import limiter
 
 router = APIRouter(prefix="/api/v1", tags=["Leads"])
 
 
 @router.post("/leads", response_model=LeadResponse, status_code=201)
+@limiter.limit("60/minute")
 async def create_lead(
-    request: LeadCreateRequest,
+    request: Request,
+    lead_request: LeadCreateRequest,
     db: AsyncSession = Depends(get_async_session),
 ):
     """Submit a single lead for processing.
@@ -52,10 +55,10 @@ async def create_lead(
     """
     # Validate synchronously
     is_valid, failure_reason, payload_hash = await validate_lead(
-        name=request.name,
-        email=request.email,
-        company=request.company,
-        message=request.message,
+        name=lead_request.name,
+        email=lead_request.email,
+        company=lead_request.company,
+        message=lead_request.message,
         db=db,
     )
 
@@ -64,7 +67,7 @@ async def create_lead(
         if failure_reason and "DUPLICATE_LEAD" in failure_reason:
             logger.warning(
                 "Lead rejected (duplicate)",
-                email=request.email,
+                email=lead_request.email,
                 reason=failure_reason,
             )
             raise HTTPException(
@@ -78,16 +81,16 @@ async def create_lead(
         # For non-duplicate rejections, store with a unique hash suffix
         import uuid as _uuid
         reject_hash = (payload_hash or generate_payload_hash(
-            request.email, request.company, request.message
+            lead_request.email, lead_request.company, lead_request.message
         )) + f"_rejected_{_uuid.uuid4().hex[:8]}"
 
         rejected_lead = Lead(
-            raw_payload=request.model_dump(),
-            email=request.email,
-            name=request.name,
-            company=request.company,
-            message=request.message,
-            source=request.source,
+            raw_payload=lead_request.model_dump(),
+            email=lead_request.email,
+            name=lead_request.name,
+            company=lead_request.company,
+            message=lead_request.message,
+            source=lead_request.source,
             payload_hash=reject_hash,
             status="REJECTED",
             failure_reason=failure_reason,
@@ -98,7 +101,7 @@ async def create_lead(
         logger.warning(
             "Lead rejected",
             lead_id=str(rejected_lead.id),
-            email=request.email,
+            email=lead_request.email,
             reason=failure_reason,
         )
 
@@ -113,12 +116,12 @@ async def create_lead(
 
     # Create valid lead
     lead = Lead(
-        raw_payload=request.model_dump(),
-        email=request.email,
-        name=request.name,
-        company=request.company,
-        message=request.message,
-        source=request.source,
+        raw_payload=lead_request.model_dump(),
+        email=lead_request.email,
+        name=lead_request.name,
+        company=lead_request.company,
+        message=lead_request.message,
+        source=lead_request.source,
         payload_hash=payload_hash,
         status="VALIDATED",
     )
@@ -126,7 +129,7 @@ async def create_lead(
     await db.flush()
 
     lead_id = str(lead.id)
-    logger.info("Lead created and validated", lead_id=lead_id, email=request.email)
+    logger.info("Lead created and validated", lead_id=lead_id, email=lead_request.email)
 
     # Queue for async processing (no LLM in request handler)
     process_lead.delay(lead_id)
@@ -140,7 +143,9 @@ async def create_lead(
 
 
 @router.post("/leads/batch", response_model=LeadBatchResponse)
+@limiter.limit("10/minute")
 async def create_leads_batch(
+    request: Request,
     file: UploadFile = File(..., description="CSV file with columns: name, email, company, message, source"),
     db: AsyncSession = Depends(get_async_session),
 ):

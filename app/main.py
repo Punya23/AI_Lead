@@ -17,10 +17,13 @@ from loguru import logger
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.core.middleware import CorrelationIDMiddleware
+from app.core.rate_limiter import limiter, rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from app.api.routes.health import router as health_router
 from app.api.routes.leads import router as leads_router
 from app.api.routes.webhooks import router as webhooks_router
 from app.api.routes.admin import router as admin_router
+from app.api.routes.stream import router as stream_router
 
 
 @asynccontextmanager
@@ -63,6 +66,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Rate limiter state (required by slowapi)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 # Correlation ID — must be outermost to capture all requests
 app.add_middleware(CorrelationIDMiddleware)
@@ -107,6 +114,7 @@ app.include_router(health_router)
 app.include_router(leads_router)
 app.include_router(webhooks_router)
 app.include_router(admin_router)
+app.include_router(stream_router)
 
 
 @app.get("/", tags=["Root"])

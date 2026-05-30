@@ -55,6 +55,15 @@ class Settings(BaseSettings):
     # --- Rate Limiting ---
     RATE_LIMIT_PER_MINUTE: int = 60
 
+    # --- Notifications (empty = disabled) ---
+    SLACK_WEBHOOK_URL: str = ""
+    DISCORD_WEBHOOK_URL: str = ""
+
+    # --- Semantic Dedup (ChromaDB) ---
+    ENABLE_SEMANTIC_DEDUP: bool = True
+    SEMANTIC_SIMILARITY_THRESHOLD: float = 0.85
+    CHROMA_PERSIST_DIR: str = "/app/data/chroma"
+
     # --- Server ---
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000
