@@ -256,7 +256,13 @@ async def list_leads(
     query = select(Lead)
 
     if status:
-        query = query.where(Lead.status == status.upper())
+        if status.lower() == "qualified":
+            # "qualified" is a special pseudo-status mapping to SALES_QUEUE
+            from app.models.routing import RoutingDecision
+            query = query.join(RoutingDecision).where(RoutingDecision.queue == "SALES_QUEUE")
+        else:
+            query = query.where(Lead.status == status.upper())
+            
     if flag_for_review is not None:
         query = query.where(Lead.flag_for_review == flag_for_review)
 

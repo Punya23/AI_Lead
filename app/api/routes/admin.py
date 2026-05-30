@@ -170,3 +170,45 @@ async def get_routing_stats(
             for queue, count in distribution.items()
         },
     }
+
+
+@router.get("/analytics")
+async def get_analytics(
+    db: AsyncSession = Depends(get_async_session),
+):
+    """Get high-level business analytics (useful for dashboards).
+
+    Returns:
+        dict: Aggregated metrics including total, qualified, and rejected counts.
+    """
+    from app.models.routing import RoutingDecision
+
+    # Total leads
+    total_result = await db.execute(select(func.count(Lead.id)))
+    total_leads = total_result.scalar()
+
+    # Rejected leads (validation failures + duplicates)
+    rejected_result = await db.execute(
+        select(func.count(Lead.id)).where(Lead.status == "REJECTED")
+    )
+    rejected_leads = rejected_result.scalar()
+
+    # Routing stats
+    routing_result = await db.execute(
+        select(RoutingDecision.queue, func.count(RoutingDecision.id))
+        .group_by(RoutingDecision.queue)
+    )
+    routing_counts = dict(routing_result.all())
+
+    sales_queue = routing_counts.get("SALES_QUEUE", 0)
+    nurture_queue = routing_counts.get("NURTURE_QUEUE", 0)
+    archive = routing_counts.get("ARCHIVE", 0)
+
+    return {
+        "total_leads": total_leads,
+        "qualified": sales_queue,  # For recruiters/dashboard: qualified means sent to sales
+        "rejected": rejected_leads,
+        "sales_queue": sales_queue,
+        "nurture_queue": nurture_queue,
+        "archived": archive,
+    }
