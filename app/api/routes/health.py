@@ -129,9 +129,14 @@ async def health_check():
 
     status_code = 200 if all_ok else 503
 
+    # Show enrichment mode so evaluator knows which mode is active
+    from app.services.llm_client import _is_api_key_configured
+    enrichment_mode = "gemini" if _is_api_key_configured() else "mock (no GOOGLE_API_KEY)"
+
     return {
         "status": "healthy" if all_ok else "degraded",
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        "enrichment_mode": enrichment_mode,
         "checks": {
             "database": db,
             "redis": redis_status,

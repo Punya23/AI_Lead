@@ -59,11 +59,15 @@ def _get_collection():
 def _embed_text(text: str) -> list[float] | None:
     """Generate embedding using Gemini's text-embedding-004 model.
 
-    Returns None on failure — caller should handle gracefully.
+    Returns None on failure or if no API key is configured.
     """
     try:
+        key = settings.GOOGLE_API_KEY
+        if not key or key == "your-gemini-api-key-here":
+            logger.debug("Skipping embedding — no GOOGLE_API_KEY configured")
+            return None
         from google import genai
-        client = genai.Client(api_key=settings.GOOGLE_API_KEY)
+        client = genai.Client(api_key=key)
         result = client.models.embed_content(
             model="models/text-embedding-004",
             contents=text,
