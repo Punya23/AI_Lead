@@ -1,0 +1,42 @@
+[
+  {
+    "name": "Sarah Chen",
+    "email": "sarah@techflow.io",
+    "company": "TechFlow Solutions",
+    "message": "We're a mid-size SaaS company processing 1000+ customer tickets daily. Looking for AI automation to reduce response times and agent workload. Need something production-ready within 2 months. Budget approved for $50k/year.",
+    "source": "website_form",
+    "_expected": "HIGH INTENT → SALES_QUEUE (score ~85-95)"
+  },
+  {
+    "name": "Michael Rodriguez",
+    "email": "m.rodriguez@greenleaf.com",
+    "company": "GreenLeaf Analytics",
+    "message": "Exploring AI solutions for data pipeline automation. We currently have a small team and want to scale our analytics processing. No immediate timeline but interested in a demo.",
+    "source": "api",
+    "_expected": "MEDIUM INTENT → NURTURE_QUEUE (score ~50-65)"
+  },
+  {
+    "name": "Alex Kim",
+    "email": "alex@gmail.com",
+    "company": "Freelance",
+    "message": "Just curious about your product. Saw it on Twitter.",
+    "source": "website_form",
+    "_expected": "LOW INTENT → ARCHIVE (score ~15-30)"
+  },
+  {
+    "name": "SpamBot",
+    "email": "winner@mailinator.com",
+    "company": "Free Money Inc",
+    "message": "Congratulations you won! Click here for free money! Act now!",
+    "source": "api",
+    "_expected": "REJECTED (disposable email + spam keywords)"
+  },
+  {
+    "name": "Sarah Chen",
+    "email": "sarah@techflow.io",
+    "company": "TechFlow Solutions",
+    "message": "We're a mid-size SaaS company processing 1000+ customer tickets daily. Looking for AI automation to reduce response times and agent workload. Need something production-ready within 2 months. Budget approved for $50k/year.",
+    "source": "website_form",
+    "_expected": "REJECTED (duplicate of lead #1 — same content hash)"
+  }
+]
