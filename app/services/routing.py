@@ -106,6 +106,20 @@ def route_lead(session: Session, lead: Lead, lead_score: int) -> str:
             duration_ms=duration_ms,
         )
 
+        # Fire notification (fire-and-forget — never crashes pipeline)
+        try:
+            from app.services.notifications import send_lead_notification
+            send_lead_notification(
+                lead_name=lead.name,
+                lead_email=lead.email,
+                company=lead.company,
+                score=lead_score,
+                queue=queue,
+                lead_id=str(lead.id),
+            )
+        except Exception as notify_err:
+            log.warning("Notification dispatch failed (non-fatal)", error=str(notify_err))
+
         return queue
 
     except Exception as e:
