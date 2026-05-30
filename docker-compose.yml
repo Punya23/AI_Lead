@@ -41,6 +41,7 @@ services:
       - .env
     volumes:
       - ./app:/app/app
+      - chroma_data:/app/data/chroma
     depends_on:
       postgres:
         condition: service_healthy
@@ -63,6 +64,7 @@ services:
       - .env
     volumes:
       - ./app:/app/app
+      - chroma_data:/app/data/chroma
     depends_on:
       postgres:
         condition: service_healthy
@@ -77,3 +79,4 @@ services:
 
 volumes:
   postgres_data:
+  chroma_data:

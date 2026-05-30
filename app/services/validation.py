@@ -237,5 +237,28 @@ async def validate_lead(
         logger.warning("Validation failed: duplicate", reason=reason, email=email)
         return False, reason, payload_hash
 
+    # 7. Semantic dedup check (most expensive — hits vector DB + embedding API)
+    # Fail-open: if ChromaDB or embedding fails, the lead passes through
+    try:
+        from app.services.vector_store import find_similar_leads
+        similar = find_similar_leads(message)
+        if similar:
+            best_match = similar[0]
+            reason = (
+                f"SEMANTIC_DUPLICATE: similar lead found "
+                f"(id={best_match['lead_id']}, similarity={best_match['similarity']})"
+            )
+            logger.warning(
+                "Validation failed: semantic duplicate",
+                reason=reason,
+                email=email,
+                similar_lead=best_match["lead_id"],
+                similarity=best_match["similarity"],
+            )
+            return False, reason, payload_hash
+    except Exception as e:
+        # Semantic dedup failure is non-fatal — lead passes through
+        logger.debug(f"Semantic dedup check skipped: {e}")
+
     logger.info("Validation passed", email=email, payload_hash=payload_hash)
     return True, None, payload_hash
