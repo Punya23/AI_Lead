@@ -15,6 +15,13 @@ redis==5.2.1
 # LLM
 google-genai==1.16.1
 
+# AI Orchestration
+langgraph==0.4.1
+langchain-core>=0.3.0
+
+# Vector Database
+chromadb>=1.0.0
+
 # Validation & Serialization
 pydantic==2.11.3
 pydantic-settings==2.9.1
@@ -28,6 +35,9 @@ loguru==0.7.3
 
 # Rate Limiting
 slowapi==0.1.9
+
+# Streaming
+sse-starlette==2.3.3
 
 # File Processing
 python-multipart==0.0.20
