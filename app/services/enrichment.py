@@ -99,8 +99,17 @@ def enrich_lead(session: Session, lead: Lead) -> EnrichmentResult:
         duration_ms = int((time.time() - start_time) * 1000)
         log.error("Enrichment failed", error=str(e), duration_ms=duration_ms)
 
-        # Use fallback enrichment
-        fallback = get_fallback_enrichment()
+        # Fall back to mock (keyword-based) enrichment using actual lead data
+        # This guarantees intelligent results even when the API is down
+        from app.services.llm_client import _mock_enrichment
+        fallback, fallback_raw = _mock_enrichment(
+            name=lead.name,
+            email=lead.email,
+            company=lead.company,
+            message=lead.message,
+            source=lead.source,
+            lead_id=str(lead.id),
+        )
 
         enrichment = Enrichment(
             lead_id=lead.id,
@@ -110,7 +119,7 @@ def enrich_lead(session: Session, lead: Lead) -> EnrichmentResult:
             urgency_level=fallback.urgency_level,
             pain_points=fallback.pain_points,
             ai_summary=fallback.ai_summary,
-            raw_llm_response=f"FALLBACK: {str(e)}",
+            raw_llm_response=f"FALLBACK_MOCK: {fallback_raw}",
         )
         session.add(enrichment)
 
@@ -120,14 +129,14 @@ def enrich_lead(session: Session, lead: Lead) -> EnrichmentResult:
         exec_log.error_message = str(e)
         exec_log.error_traceback = traceback.format_exc()
 
-        # Flag for review but continue pipeline with fallback data
+        # Flag for review but continue pipeline with mock data
         lead.flag_for_review = True
-        lead.flag_reason = f"Enrichment failed: {str(e)}"
+        lead.flag_reason = f"Gemini API failed, used mock enrichment: {str(e)}"
         lead.status = "ENRICHED"  # Continue with fallback
         lead.updated_at = datetime.now(timezone.utc)
 
         session.flush()
-        log.warning("Using fallback enrichment, lead flagged for review")
+        log.warning("Using mock enrichment fallback, lead flagged for review")
 
         return fallback
 

@@ -1049,7 +1049,7 @@
     // ========================================
     function startPolling(leadId) {
       let attempts = 0;
-      const maxAttempts = 40; // 20 seconds max
+      const maxAttempts = 120; // 60 seconds max (handles LLM retries)
 
       if (pollTimer) clearInterval(pollTimer);
 
@@ -1199,6 +1199,20 @@
       }
     }
 
+    // Fetch lead detail and show result (called by SSE or polling)
+    async function fetchAndShowResult(leadId) {
+      try {
+        const res = await fetch(API + '/leads/' + leadId);
+        if (!res.ok) return;
+        const lead = await res.json();
+        if (lead.status === 'COMPLETE') {
+          showResult(lead);
+          refreshAnalytics();
+          refreshLeads();
+        }
+      } catch(e) {}
+    }
+
     function hideResult() {
       document.getElementById('resultPanel').classList.remove('visible');
     }
@@ -1259,6 +1273,12 @@
               setConnector(m.connector, 'done');
             } else if (m && data.status === 'STARTED') {
               setStage(m.stage, 'active');
+            }
+
+            // If pipeline completed via SSE, fetch full result
+            if (data.stage === 'pipeline' && data.status === 'COMPLETE') {
+              setStage('s-complete', 'done');
+              fetchAndShowResult(currentLeadId);
             }
           }
         } catch(err) {}
