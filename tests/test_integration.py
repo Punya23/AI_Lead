@@ -657,3 +657,65 @@ class TestStreamingEndpoint:
                 if line.startswith("event:"):
                     assert "heartbeat" in line or "pipeline_event" in line
                     break
+
+class TestMultiAgentIntegration:
+    """Tests specifically targeting the new multi-agent pipeline."""
+
+    def test_multi_agent_enrichment_fields_populated(self):
+        """Verify the multi-agent pipeline extracts all specialized fields."""
+        resp = httpx.post(f"{API}/leads", json={
+            "name": "Multi Agent",
+            "email": f"multi-{uuid.uuid4().hex[:6]}@techstartup.io",
+            "company": "TechStartup",
+            "message": "We need to purchase a pilot by next week to solve our manual entry problem.",
+            "source": "api",
+        }, timeout=10)
+        assert resp.status_code == 201
+        
+        result = wait_for_completion(resp.json()["lead_id"])
+        
+        e = result["enrichment"]
+        assert e["estimated_intent"] in ("Demo Request", "Purchase")
+        assert e["urgency_level"] == "High"
+        assert e["company_type"] == "Startup"
+        assert e["lead_category"] == "B2B SaaS"
+
+    def test_queue_filtering_admin_endpoint(self):
+        """Admin endpoint should filter by queue correctly."""
+        resp = httpx.get(f"{API}/leads", params={"queue": "SALES_QUEUE"}, timeout=10)
+        assert resp.status_code == 200
+        assert "leads" in resp.json()
+
+    def test_search_endpoint(self):
+        """Search endpoint should find leads by email."""
+        email = f"search-{uuid.uuid4().hex[:6]}@findme.com"
+        httpx.post(f"{API}/leads", json={
+            "name": "Search Me",
+            "email": email,
+            "company": "FindMe",
+            "message": "Testing search functionality.",
+            "source": "api",
+        }, timeout=10)
+        
+        # Give DB a moment to index
+        time.sleep(2)
+        
+        resp = httpx.get(f"{API}/leads/search", params={"q": email}, timeout=10)
+        assert resp.status_code == 200
+        assert len(resp.json()["leads"]) > 0
+        
+    def test_pagination_on_leads_endpoint(self):
+        """Lead list endpoint should respect limit and skip parameters."""
+        resp = httpx.get(f"{API}/leads", params={"limit": 2, "skip": 0}, timeout=10)
+        assert resp.status_code == 200
+        assert len(resp.json()["leads"]) <= 2
+
+    def test_cors_headers_present(self):
+        """API should include CORS headers."""
+        resp = httpx.options(f"{API}/leads")
+        assert "access-control-allow-origin" in resp.headers
+
+    def test_invalid_uuid_returns_422(self):
+        """Fetching a non-UUID lead ID should return 422 Validation Error."""
+        resp = httpx.get(f"{API}/leads/not-a-uuid", timeout=10)
+        assert resp.status_code == 422

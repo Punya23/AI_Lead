@@ -46,6 +46,10 @@ class Lead(Base):
         comment="RECEIVED|VALIDATED|ENRICHED|SCORED|ROUTED|COMPLETE|FAILED|REJECTED"
     )
     failure_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    pipeline_checkpoint: Mapped[dict | None] = mapped_column(
+        JSONB, nullable=True, default={},
+        comment="Lightweight LangGraph state checkpoint for node-level resume"
+    )
 
     # --- Review flags ---
     flag_for_review: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

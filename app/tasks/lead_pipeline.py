@@ -86,16 +86,25 @@ def process_lead(self, lead_id: str) -> dict:
         # --- Execute LangGraph Pipeline ---
         from app.services.langgraph_pipeline import build_pipeline_graph
 
+        domain = lead.email.split("@")[-1] if "@" in lead.email else "unknown.com"
+
         graph = build_pipeline_graph()
         result_state = graph.invoke({
             "lead_id": lead_id,
             "session": session,
             "lead": lead,
+            "message": lead.message,
+            "domain": domain,
+            "checkpoint": lead.pipeline_checkpoint or {},
             "current_status": lead.status,
+            "intent_result": None,
+            "research_result": None,
+            "categorization_result": None,
             "enrichment_result": None,
             "scoring_result": None,
             "queue": None,
             "error": None,
+            "retry_count": self.request.retries,
         })
 
         queue = result_state.get("queue", "UNKNOWN")

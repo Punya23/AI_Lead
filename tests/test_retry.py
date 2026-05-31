@@ -196,3 +196,77 @@ class TestDeduplication:
             hashes.add(h)
 
         assert len(hashes) == 1, f"Hash is non-deterministic! Got {len(hashes)} unique values"
+
+class TestLLMAgentRetries:
+    """Tests for the LLM retry logic inside _execute_llm_call."""
+    
+    @patch("app.services.llm_client._get_client")
+    @patch("app.services.llm_client.time.sleep")
+    def test_llm_timeout_retry_success(self, mock_sleep, mock_get_client):
+        """Should retry on timeout and succeed on second try."""
+        from app.services.llm_client import _execute_llm_call
+        from app.core.exceptions import LLMTimeoutError
+        from app.schemas.enrichment import CategorizationResult
+        
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        
+        # First call raises timeout, second call succeeds
+        mock_response = MagicMock()
+        mock_response.text = '{"lead_category": "B2B SaaS"}'
+        mock_client.models.generate_content.side_effect = [
+            LLMTimeoutError(lead_id="123", timeout_seconds=30),
+            mock_response
+        ]
+        
+        result, raw = _execute_llm_call("prompt", CategorizationResult, "123", "cat_agent")
+        
+        assert result.lead_category == "B2B SaaS"
+        assert mock_client.models.generate_content.call_count == 2
+        mock_sleep.assert_called_once()
+
+    @patch("app.services.llm_client._get_client")
+    @patch("app.services.llm_client.time.sleep")
+    def test_llm_malformed_json_corrective_prompt(self, mock_sleep, mock_get_client):
+        """Should append corrective prompt on malformed JSON and succeed."""
+        from app.services.llm_client import _execute_llm_call
+        from app.schemas.enrichment import CategorizationResult
+        
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        
+        bad_response = MagicMock()
+        bad_response.text = 'Here is the JSON: {"lead_category": "B2B SaaS"' # missing closing brace
+        
+        good_response = MagicMock()
+        good_response.text = '{"lead_category": "B2B SaaS"}'
+        
+        mock_client.models.generate_content.side_effect = [bad_response, good_response]
+        
+        result, raw = _execute_llm_call("prompt", CategorizationResult, "123", "cat_agent")
+        
+        assert result.lead_category == "B2B SaaS"
+        assert mock_client.models.generate_content.call_count == 2
+        
+        # Second call should have corrective prompt appended
+        call_args = mock_client.models.generate_content.call_args_list[1]
+        assert "IMPORTANT: Respond ONLY with the JSON object." in call_args[1]["contents"]
+
+    @patch("app.services.llm_client._get_client")
+    @patch("app.services.llm_client.time.sleep")
+    def test_llm_timeout_max_retries_exhausted(self, mock_sleep, mock_get_client):
+        """Should raise LLMTimeoutError after all retries are exhausted."""
+        from app.services.llm_client import _execute_llm_call, LLM_RETRY_POLICY
+        from app.core.exceptions import LLMTimeoutError
+        from app.schemas.enrichment import CategorizationResult
+        
+        mock_client = MagicMock()
+        mock_get_client.return_value = mock_client
+        
+        # Always timeout
+        mock_client.models.generate_content.side_effect = LLMTimeoutError(lead_id="123", timeout_seconds=30)
+        
+        with pytest.raises(LLMTimeoutError):
+            _execute_llm_call("prompt", CategorizationResult, "123", "cat_agent")
+            
+        assert mock_client.models.generate_content.call_count == LLM_RETRY_POLICY["max_attempts"]

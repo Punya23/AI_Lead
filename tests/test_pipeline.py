@@ -214,3 +214,215 @@ class TestRoutingThresholds:
         # 75 would be SALES with default (70) but NURTURE with custom (80)
         queue = route_lead(session, lead, lead_score=75)
         assert queue == "NURTURE_QUEUE"
+
+@patch("app.services.llm_client._is_api_key_configured", return_value=False)
+class TestLangGraphPipeline:
+    """Tests for the multi-agent LangGraph orchestration."""
+
+    def _make_mock_lead(self):
+        lead = MagicMock()
+        lead.id = uuid4()
+        lead.status = "VALIDATED"
+        lead.pipeline_checkpoint = {}
+        lead.message = "Need demo."
+        lead.email = "test@example.com"
+        return lead
+        
+    def _make_mock_session(self):
+        session = MagicMock()
+        session.add = MagicMock()
+        session.flush = MagicMock()
+        session.commit = MagicMock()
+        return session
+
+    def test_node_sequence_and_state_accumulation(self, mock_api_key):
+        """Test that all 5 nodes execute sequentially and accumulate state."""
+        from app.services.langgraph_pipeline import build_pipeline_graph
+        graph = build_pipeline_graph()
+        
+        lead = self._make_mock_lead()
+        session = self._make_mock_session()
+        
+        result = graph.invoke({
+            "lead_id": str(lead.id),
+            "session": session,
+            "lead": lead,
+            "message": lead.message,
+            "domain": "example.com",
+            "checkpoint": {},
+            "current_status": "VALIDATED",
+            "intent_result": None,
+            "research_result": None,
+            "categorization_result": None,
+            "enrichment_result": None,
+            "scoring_result": None,
+            "queue": None,
+            "error": None,
+            "retry_count": 0,
+        })
+        
+        # Check that state accumulated correctly across nodes
+        assert result["intent_result"] is not None
+        assert result["research_result"] is not None
+        assert result["enrichment_result"] is not None
+        assert result["scoring_result"] is not None
+        assert result["queue"] is not None
+        assert result["error"] is None
+        assert result["current_status"] == "COMPLETE"
+        
+    def test_checkpoint_resume_logic(self, mock_api_key):
+        """Test that checkpointed nodes are skipped and don't re-run."""
+        from app.services.langgraph_pipeline import build_pipeline_graph
+        graph = build_pipeline_graph()
+        
+        lead = self._make_mock_lead()
+        session = self._make_mock_session()
+        
+        # Pre-fill checkpoint to simulate intent agent already finished
+        checkpoint = {
+            "enrichment": {
+                "estimated_intent": "Demo Request",
+                "urgency_level": "High",
+                "pain_points": ["Manual process"]
+            }
+        }
+        lead.pipeline_checkpoint = checkpoint
+        
+        with patch("app.services.llm_client.call_intent_agent") as mock_intent:
+            result = graph.invoke({
+                "lead_id": str(lead.id),
+                "session": session,
+                "lead": lead,
+                "message": lead.message,
+                "domain": "example.com",
+                "checkpoint": checkpoint,
+                "current_status": "VALIDATED",
+                "intent_result": None,
+                "research_result": None,
+                "categorization_result": None,
+                "enrichment_result": None,
+                "scoring_result": None,
+                "queue": None,
+                "error": None,
+                "retry_count": 0,
+            })
+            
+            # The intent LLM should NOT be called because it's in the checkpoint
+            mock_intent.assert_not_called()
+            
+            # But the state should still contain the intent result
+            assert result["intent_result"].estimated_intent == "Demo Request"
+            
+    def test_error_propagation_routes_to_error_node(self, mock_api_key):
+        """Test that a node failure sets the error state and triggers error_node."""
+        from app.services.langgraph_pipeline import build_pipeline_graph
+        graph = build_pipeline_graph()
+        
+        lead = self._make_mock_lead()
+        session = self._make_mock_session()
+        
+        with patch("app.services.enrichment.run_research_agent", side_effect=ValueError("LLM down")):
+            with pytest.raises(Exception, match="research_agent_failed: LLM down"):
+                graph.invoke({
+                    "lead_id": str(lead.id),
+                    "session": session,
+                    "lead": lead,
+                    "message": lead.message,
+                    "domain": "example.com",
+                    "checkpoint": {},
+                    "current_status": "VALIDATED",
+                    "intent_result": None,
+                    "research_result": None,
+                    "categorization_result": None,
+                    "enrichment_result": None,
+                    "scoring_result": None,
+                    "queue": None,
+                    "error": None,
+                    "retry_count": 0,
+                })
+            
+            # The error_node sets lead.status to FAILED
+            assert lead.status == "FAILED"
+
+    def test_load_existing_enrichment_node(self, mock_api_key):
+        """Test that load_enrichment_node correctly loads data when skip enrich."""
+        from app.services.langgraph_pipeline import build_pipeline_graph
+        graph = build_pipeline_graph()
+        
+        lead = self._make_mock_lead()
+        lead.status = "ENRICHED" # Skip enrichment
+        session = self._make_mock_session()
+        
+        from app.models.enrichment import Enrichment as EnrichmentModel
+        mock_enrich = EnrichmentModel(
+            lead_category="B2B SaaS",
+            company_type="Enterprise",
+            estimated_intent="Demo Request",
+            urgency_level="High",
+            pain_points=["A"],
+            ai_summary="Summary"
+        )
+        mock_exec = MagicMock()
+        mock_exec.scalar_one_or_none.return_value = mock_enrich
+        session.execute.return_value = mock_exec
+        
+        result = graph.invoke({
+            "lead_id": str(lead.id),
+            "session": session,
+            "lead": lead,
+            "message": lead.message,
+            "domain": "example.com",
+            "checkpoint": {},
+            "current_status": lead.status,
+            "intent_result": None,
+            "research_result": None,
+            "categorization_result": None,
+            "enrichment_result": None,
+            "scoring_result": None,
+            "queue": None,
+            "error": None,
+            "retry_count": 0,
+        })
+        
+        assert result["enrichment_result"] is not None
+        assert result["enrichment_result"].lead_category == "B2B SaaS"
+
+    def test_error_node_raises_exception_to_celery(self, mock_api_key):
+        """Test error_node directly."""
+        from app.services.langgraph_pipeline import error_node
+        lead = self._make_mock_lead()
+        session = self._make_mock_session()
+        
+        state = {
+            "lead_id": str(lead.id),
+            "lead": lead,
+            "session": session,
+            "error": "some_error",
+        }
+        
+        with pytest.raises(Exception, match="some_error"):
+            error_node(state)
+            
+        assert lead.status == "FAILED"
+
+    def test_routing_edge_logic(self, mock_api_key):
+        """Test should_route_or_end logic."""
+        from app.services.langgraph_pipeline import should_route_or_end
+        from langgraph.graph import END
+        
+        assert should_route_or_end({"current_status": "SCORED"}) == "route"
+        assert should_route_or_end({"current_status": "ROUTED"}) == END
+
+    def test_scoring_edge_logic(self, mock_api_key):
+        """Test should_score_or_skip logic."""
+        from app.services.langgraph_pipeline import should_score_or_skip
+        
+        assert should_score_or_skip({"current_status": "ENRICHED"}) == "score"
+        assert should_score_or_skip({"current_status": "SCORED"}) == "route_or_end"
+
+    def test_enrichment_edge_logic(self, mock_api_key):
+        """Test should_enrich_or_skip logic."""
+        from app.services.langgraph_pipeline import should_enrich_or_skip
+        
+        assert should_enrich_or_skip({"current_status": "VALIDATED"}) == "enrich"
+        assert should_enrich_or_skip({"current_status": "ENRICHED"}) == "load_enrichment"

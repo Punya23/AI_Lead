@@ -1,18 +1,5 @@
 """
-LangGraph pipeline — graph-based orchestration for lead processing.
-
-Why LangGraph over manual state machine:
-    The manual approach uses if/else chains to check lead status and
-    decide which stage to run next. This works, but it's:
-    - Hard to visualize the flow
-    - Easy to introduce bugs when adding new stages
-    - Not declaratively expressing the workflow intent
-
-    LangGraph makes the pipeline a FIRST-CLASS GRAPH where:
-    - Each stage is a node
-    - Conditional edges express the idempotent resume logic
-    - The graph is self-documenting and visualizable
-    - Adding a new stage is: add_node() + add_edge()
+LangGraph pipeline — Multi-Agent orchestration for lead processing.
 
 Architecture:
     Celery handles: distribution, retry, acks_late, dead-lettering
@@ -22,13 +9,18 @@ Architecture:
     LangGraph is the workflow definition.
 """
 
-from typing import TypedDict, Any
+from typing import TypedDict, Any, Optional
 
 from langgraph.graph import StateGraph, END
 from loguru import logger
 
 from app.models.lead import Lead
-from app.schemas.enrichment import EnrichmentResult
+from app.schemas.enrichment import (
+    EnrichmentResult,
+    IntentUrgencyResult,
+    CompanyContextResult,
+    CategorizationResult,
+)
 
 
 # --- Pipeline State ---
@@ -39,14 +31,30 @@ class PipelineState(TypedDict):
     This is the "context object" that flows through the graph.
     Each node reads what it needs and writes its output.
     """
+    # Input fields
     lead_id: str
-    session: Any              # SQLAlchemy sync session (not serializable, graph-local)
+    session: Any              # SQLAlchemy sync session
     lead: Any                 # Lead ORM object
-    current_status: str       # Current lead status for idempotent routing
-    enrichment_result: EnrichmentResult | None
+    message: str
+    domain: str
+    checkpoint: dict          # Lightweight resume checkpoints from DB
+    current_status: str       # Current lead status
+
+    # Agent outputs (accumulated sequentially)
+    intent_result: Optional[IntentUrgencyResult]
+    research_result: Optional[CompanyContextResult]
+    categorization_result: Optional[CategorizationResult]
+    
+    # Combined DB persistence object (created after categorization)
+    enrichment_result: Optional[EnrichmentResult]
+
+    # Downstream outputs
     scoring_result: Any       # ScoringResult from score_lead()
-    queue: str | None         # Final routing destination
-    error: str | None         # Error message if any stage fails
+    queue: Optional[str]      # Final routing destination
+    
+    # Error tracking
+    error: Optional[str]
+    retry_count: int
 
 
 # --- Stage Order ---
@@ -63,36 +71,59 @@ def _stage_index(status: str) -> int:
 
 
 # --- Graph Nodes ---
-# Each node calls the existing service functions (NO code duplication).
-# Nodes receive state, do work, and return updated state.
 
-def enrich_node(state: PipelineState) -> PipelineState:
-    """Enrichment node — calls Gemini for AI enrichment."""
-    from app.services.enrichment import enrich_lead
-    from app.api.routes.stream import publish_pipeline_event
-
-    log = logger.bind(lead_id=state["lead_id"], node="enrich")
-    log.info("LangGraph: executing enrichment node")
-
-    enrichment_result = enrich_lead(state["session"], state["lead"])
-    state["session"].commit()
-
-    publish_pipeline_event(state["lead_id"], "enrichment", "SUCCESS", {
-        "category": enrichment_result.lead_category,
-        "intent": enrichment_result.estimated_intent,
-        "urgency": enrichment_result.urgency_level,
-    })
-
-    state["enrichment_result"] = enrichment_result
-    state["current_status"] = "ENRICHED"
-
-    # Store embedding for semantic dedup (non-blocking)
+def enrichment_agent_node(state: PipelineState) -> PipelineState:
+    from app.services.enrichment import run_enrichment_agent
     try:
-        from app.services.vector_store import add_lead_embedding
-        add_lead_embedding(state["lead_id"], state["lead"].message)
+        result = run_enrichment_agent(state["session"], state["lead"], state["message"])
+        state["intent_result"] = result
+        state["error"] = None
     except Exception as e:
-        log.debug(f"Embedding storage skipped: {e}")
+        state["error"] = f"enrichment_agent_failed: {str(e)}"
+    return state
 
+
+def research_agent_node(state: PipelineState) -> PipelineState:
+    from app.services.enrichment import run_research_agent
+    try:
+        result = run_research_agent(state["session"], state["lead"], state["domain"], state["message"])
+        state["research_result"] = result
+        state["error"] = None
+    except Exception as e:
+        state["error"] = f"research_agent_failed: {str(e)}"
+    return state
+
+
+def categorization_agent_node(state: PipelineState) -> PipelineState:
+    from app.services.enrichment import run_categorization_agent
+    from app.api.routes.stream import publish_pipeline_event
+    from app.services.vector_store import add_lead_embedding
+    try:
+        result = run_categorization_agent(
+            state["session"], 
+            state["lead"], 
+            state["intent_result"], 
+            state["research_result"], 
+            state["message"]
+        )
+        state["enrichment_result"] = result
+        state["current_status"] = "ENRICHED"
+        state["error"] = None
+        
+        publish_pipeline_event(state["lead_id"], "enrichment", "SUCCESS", {
+            "category": result.lead_category,
+            "intent": result.estimated_intent,
+            "urgency": result.urgency_level,
+        })
+        
+        # Store embedding for semantic dedup (non-blocking)
+        try:
+            add_lead_embedding(state["lead_id"], state["message"])
+        except Exception as e:
+            logger.debug(f"Embedding storage skipped: {e}")
+            
+    except Exception as e:
+        state["error"] = f"categorization_agent_failed: {str(e)}"
     return state
 
 
@@ -119,67 +150,84 @@ def load_existing_enrichment(state: PipelineState) -> PipelineState:
             ai_summary=enrichment_model.ai_summary,
         )
     else:
-        raise ValueError("Enrichment record missing for ENRICHED lead")
-
+        state["error"] = "Enrichment record missing for ENRICHED lead"
+        
     return state
 
 
-def score_node(state: PipelineState) -> PipelineState:
+def scoring_agent_node(state: PipelineState) -> PipelineState:
     """Scoring node — deterministic Python scoring."""
     from app.services.scoring import score_lead
     from app.api.routes.stream import publish_pipeline_event
 
-    log = logger.bind(lead_id=state["lead_id"], node="score")
-    log.info("LangGraph: executing scoring node")
+    try:
+        scoring_result = score_lead(state["session"], state["lead"], state["enrichment_result"])
+        state["session"].commit()
 
-    scoring_result = score_lead(state["session"], state["lead"], state["enrichment_result"])
-    state["session"].commit()
+        publish_pipeline_event(state["lead_id"], "scoring", "SUCCESS", {
+            "score": scoring_result.lead_score,
+            "confidence": scoring_result.confidence_score,
+        })
 
-    publish_pipeline_event(state["lead_id"], "scoring", "SUCCESS", {
-        "score": scoring_result.lead_score,
-        "confidence": scoring_result.confidence_score,
-    })
-
-    state["scoring_result"] = scoring_result
-    state["current_status"] = "SCORED"
+        state["scoring_result"] = scoring_result
+        state["current_status"] = "SCORED"
+        state["error"] = None
+    except Exception as e:
+        state["error"] = f"scoring_agent_failed: {str(e)}"
+        
     return state
 
 
-def route_node(state: PipelineState) -> PipelineState:
+def routing_agent_node(state: PipelineState) -> PipelineState:
     """Routing node — threshold-based queue assignment."""
     from app.services.routing import route_lead
     from app.api.routes.stream import publish_pipeline_event
     from sqlalchemy import select
     from app.models.score import Score as ScoreModel
 
-    log = logger.bind(lead_id=state["lead_id"], node="route")
-    log.info("LangGraph: executing routing node")
+    try:
+        if state.get("scoring_result"):
+            lead_score = state["scoring_result"].lead_score
+        else:
+            existing_score = state["session"].execute(
+                select(ScoreModel).where(ScoreModel.lead_id == state["lead"].id)
+            )
+            score_model = existing_score.scalar_one_or_none()
+            lead_score = score_model.lead_score if score_model else 0
 
-    # Get score
-    if state["scoring_result"]:
-        lead_score = state["scoring_result"].lead_score
-    else:
-        existing_score = state["session"].execute(
-            select(ScoreModel).where(ScoreModel.lead_id == state["lead"].id)
-        )
-        score_model = existing_score.scalar_one_or_none()
-        lead_score = score_model.lead_score if score_model else 0
+        queue = route_lead(state["session"], state["lead"], lead_score)
+        state["session"].commit()
 
-    queue = route_lead(state["session"], state["lead"], lead_score)
-    state["session"].commit()
+        publish_pipeline_event(state["lead_id"], "routing", "SUCCESS", {
+            "queue": queue,
+            "score": lead_score,
+        })
 
-    publish_pipeline_event(state["lead_id"], "routing", "SUCCESS", {
-        "queue": queue,
-        "score": lead_score,
-    })
-
-    state["queue"] = queue
-    state["current_status"] = "COMPLETE"
+        state["queue"] = queue
+        state["current_status"] = "COMPLETE"
+        state["error"] = None
+    except Exception as e:
+        state["error"] = f"routing_agent_failed: {str(e)}"
+        
     return state
 
 
+def error_node(state: PipelineState) -> PipelineState:
+    """Handles node-level failures by propagating to Celery."""
+    log = logger.bind(lead_id=state["lead_id"], node="error_node")
+    log.error(f"LangGraph Error Node triggered: {state['error']}")
+    
+    # We DO NOT set status to FAILED here. We raise to Celery.
+    # Celery will retry. If max retries are exceeded, Celery will dead-letter it.
+    raise Exception(state["error"])
+
+
 # --- Conditional Edge Functions ---
-# These implement the idempotent resume logic as graph routing.
+
+def check_agent_error(state: PipelineState) -> str:
+    """Route to error_node if error is set."""
+    return "error_handler" if state.get("error") else "continue"
+
 
 def should_enrich_or_skip(state: PipelineState) -> str:
     """Decide whether to run enrichment or skip (already done)."""
@@ -205,54 +253,35 @@ def should_route_or_end(state: PipelineState) -> str:
 # --- Graph Builder ---
 
 def build_pipeline_graph() -> Any:
-    """Build and compile the LangGraph pipeline.
-
-    Returns a compiled graph that can be invoked with:
-        result = graph.invoke(initial_state)
-
-    Graph structure:
-        START → should_enrich_or_skip?
-                ├─ enrich → should_score_or_skip?
-                └─ load_enrichment → should_score_or_skip?
-                                      ├─ score → should_route_or_end?
-                                      └─ route_or_end (skip)
-                                                   ├─ route → END
-                                                   └─ END (skip)
-    """
+    """Build and compile the LangGraph pipeline."""
     graph = StateGraph(PipelineState)
 
     # Add nodes
-    graph.add_node("enrich", enrich_node)
+    graph.add_node("enrichment_agent", enrichment_agent_node)
+    graph.add_node("research_agent", research_agent_node)
+    graph.add_node("categorization_agent", categorization_agent_node)
+    
     graph.add_node("load_enrichment", load_existing_enrichment)
-    graph.add_node("score", score_node)
-    graph.add_node("route", route_node)
+    graph.add_node("scoring_agent", scoring_agent_node)
+    graph.add_node("routing_agent", routing_agent_node)
+    graph.add_node("error_node", error_node)
 
-    # Entry point: decide whether to enrich
+    # Entry point
     graph.set_conditional_entry_point(
         should_enrich_or_skip,
-        {"enrich": "enrich", "load_enrichment": "load_enrichment"},
+        {"enrich": "enrichment_agent", "load_enrichment": "load_enrichment"},
     )
 
-    # After enrichment (either fresh or loaded): decide whether to score
-    graph.add_conditional_edges(
-        "enrich",
-        should_score_or_skip,
-        {"score": "score", "route_or_end": "route"},
-    )
-    graph.add_conditional_edges(
-        "load_enrichment",
-        should_score_or_skip,
-        {"score": "score", "route_or_end": "route"},
-    )
+    # Sequential Agents with Error Routing
+    graph.add_conditional_edges("enrichment_agent", check_agent_error, {"continue": "research_agent", "error_handler": "error_node"})
+    graph.add_conditional_edges("research_agent", check_agent_error, {"continue": "categorization_agent", "error_handler": "error_node"})
+    graph.add_conditional_edges("categorization_agent", check_agent_error, {"continue": "scoring_agent", "error_handler": "error_node"})
+    
+    # Load Existing (if skipped)
+    graph.add_conditional_edges("load_enrichment", check_agent_error, {"continue": "scoring_agent", "error_handler": "error_node"})
 
-    # After scoring: decide whether to route
-    graph.add_conditional_edges(
-        "score",
-        should_route_or_end,
-        {"route": "route", END: END},
-    )
-
-    # After routing: done
-    graph.add_edge("route", END)
+    # Scoring & Routing with Error Routing
+    graph.add_conditional_edges("scoring_agent", check_agent_error, {"continue": "routing_agent", "error_handler": "error_node"})
+    graph.add_conditional_edges("routing_agent", check_agent_error, {"continue": END, "error_handler": "error_node"})
 
     return graph.compile()

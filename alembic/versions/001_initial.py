@@ -33,6 +33,7 @@ def upgrade() -> None:
         sa.Column("failure_reason", sa.String(500), nullable=True),
         sa.Column("flag_for_review", sa.Boolean(), nullable=False, server_default=sa.text("false")),
         sa.Column("flag_reason", sa.Text(), nullable=True),
+        sa.Column("pipeline_checkpoint", postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default="{}"),
         sa.Column("dead_lettered_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),

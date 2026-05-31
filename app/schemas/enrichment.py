@@ -12,21 +12,8 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 
-class EnrichmentResult(BaseModel):
-    """Schema for validated LLM enrichment output.
-
-    This is used both as the Gemini response_schema AND as the
-    Pydantic validator for the LLM response. Double duty.
-    """
-
-    lead_category: str = Field(
-        ...,
-        description="One of: B2B SaaS, Enterprise, SMB, Startup, Individual, Unknown"
-    )
-    company_type: str = Field(
-        ...,
-        description="Type of company (e.g., Customer Support Platform, Fintech, E-commerce)"
-    )
+class IntentUrgencyResult(BaseModel):
+    """Output schema for the Enrichment Agent (Node 1)."""
     estimated_intent: str = Field(
         ...,
         description="One of: Demo Request, Partnership, Technical Inquiry, Pricing, Spam, Unknown"
@@ -40,12 +27,41 @@ class EnrichmentResult(BaseModel):
         max_length=5,
         description="List of identified pain points (max 5 items)"
     )
+
+
+class CompanyContextResult(BaseModel):
+    """Output schema for the Research Agent (Node 2)."""
+    company_type: str = Field(
+        ...,
+        description="Type of company (e.g., Customer Support Platform, Fintech, E-commerce)"
+    )
     ai_summary: str = Field(
         ...,
         max_length=500,
         description="2-3 sentence summary of the lead's needs (max 150 words)"
     )
 
+
+class CategorizationResult(BaseModel):
+    """Output schema for the Categorization Agent (Node 3)."""
+    lead_category: str = Field(
+        ...,
+        description="One of: B2B SaaS, Enterprise, SMB, Startup, Individual, Unknown"
+    )
+
+
+class EnrichmentResult(BaseModel):
+    """Schema for validated LLM enrichment output.
+
+    This represents the final combined output of all 3 agents,
+    ready for database persistence.
+    """
+    lead_category: str
+    company_type: str
+    estimated_intent: str
+    urgency_level: str
+    pain_points: list[str]
+    ai_summary: str
 
 class EnrichmentResponse(BaseModel):
     """API response schema for enrichment data."""

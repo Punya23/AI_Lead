@@ -38,7 +38,7 @@ A live processing dashboard streams pipeline events over Server-Sent Events as l
 
 ### Scoring Model
 
-The LLM extracts structured data (Intent, Urgency, Company Type, Pain Points). This structured output is then scored using a **pure Python math function** with no LLM involvement, ensuring the same input always produces the same score.
+The pipeline uses a **Multi-Agent LangGraph workflow** (Enrichment Agent → Research Agent → Categorization Agent) to extract structured data (Intent, Urgency, Company Type, Pain Points) and infer context from the company domain. This structured output is then scored using a **pure Python math function** with no LLM involvement, ensuring the same input always produces the same score.
 
 | Signal | Max Points | Source |
 |--------|-----------|--------|
@@ -234,6 +234,8 @@ pytest tests/test_integration.py -v
 |----------|-----------|
 | ChromaDB for semantic dedup | Hash based dedup misses paraphrased spam. Vector similarity catches it |
 | LangGraph over pure Celery chains | Explicit state machine with named nodes. Each node is idempotent and individually resumable on failure, unlike chained tasks where a mid-chain failure requires replaying the entire chain |
+| JSONB Checkpointing | Graph execution state is persisted as JSON (`pipeline_checkpoint`) in PostgreSQL, allowing the pipeline to resume exactly where it left off on worker crash |
+| 422 Unprocessable Entity for Duplicates | While `409 Conflict` is semantically correct for resources, `422` is used because the exact duplicate check intercepts the request early in the FastAPI validation layer. In a production V2 API, this would be refactored to a `409` |
 | Gemini over OpenAI | Free tier sufficient for demo. Removes cost barrier when running locally |
 | Deterministic scoring (post-LLM) | LLMs are non-deterministic. Same lead must always produce the same score and route to the same queue. Pure Python math ensures this |
 | Dual SQLAlchemy engines | FastAPI uses asyncpg (async). Celery uses psycopg2 (sync). Prevents event loop conflicts |
