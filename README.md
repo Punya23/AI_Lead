@@ -14,19 +14,7 @@ The pipeline separates **synchronous validation** (rejections under 10ms) from *
 
 Every lead transitions through a tracked state machine:
 
-```mermaid
-stateDiagram-v2
-    [*] --> RECEIVED
-    RECEIVED --> VALIDATED: Validation Passes
-    RECEIVED --> REJECTED: Spam/Gibberish/Dup detected
-    VALIDATED --> ENRICHED: LLM Extracts details
-    ENRICHED --> SCORED: Deterministic math applied
-    SCORED --> ROUTED: Placed in Nurture/Sales/Archive
-    
-    ENRICHED --> FAILED: API Down/Rate Limit
-    FAILED --> ENRICHED: Celery Auto-Retry (x3)
-    FAILED --> DEAD_LETTER: Retries Exhausted
-```
+![Pipeline Architecture](docs/pipeline_architecture.png)
 
 ---
 
