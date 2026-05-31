@@ -761,7 +761,6 @@
         <h1>Geta.ai <span>Lead Pipeline</span></h1>
       </div>
       <div style="display:flex; align-items:center; gap:12px;">
-        <span class="enrichment-mode" id="enrichmentMode">—</span>
         <div class="status-badge" id="statusBadge">
           <span class="status-dot"></span>
           <span id="statusText">Connecting...</span>
@@ -1341,7 +1340,6 @@
 
         const badge = document.getElementById('statusBadge');
         const text = document.getElementById('statusText');
-        const mode = document.getElementById('enrichmentMode');
 
         if (d.status === 'healthy') {
           badge.className = 'status-badge';
@@ -1350,8 +1348,6 @@
           badge.className = 'status-badge degraded';
           text.textContent = 'Degraded';
         }
-
-        mode.textContent = d.enrichment_mode || 'unknown';
       } catch(e) {
         const badge = document.getElementById('statusBadge');
         const text = document.getElementById('statusText');
