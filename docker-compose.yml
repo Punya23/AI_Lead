@@ -41,6 +41,7 @@ services:
       - .env
     volumes:
       - ./app:/app/app
+      - ./static:/app/static
       - chroma_data:/app/data/chroma
     depends_on:
       postgres:

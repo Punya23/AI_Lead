@@ -7,11 +7,14 @@ Design priorities (in order):
 3. Resilience — graceful degradation, not hard failures
 """
 
+import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
 from app.core.config import settings
@@ -116,6 +119,20 @@ app.include_router(webhooks_router)
 app.include_router(admin_router)
 app.include_router(stream_router)
 
+# --- Static Files & Dashboard ---
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+
+@app.get("/dashboard", tags=["Dashboard"], include_in_schema=False)
+async def dashboard():
+    """Serve the visual dashboard UI."""
+    html_path = STATIC_DIR / "dashboard.html"
+    if html_path.exists():
+        return FileResponse(str(html_path), media_type="text/html")
+    return JSONResponse({"error": "Dashboard not found"}, status_code=404)
+
 
 @app.get("/", tags=["Root"])
 async def root():
@@ -126,4 +143,5 @@ async def root():
         "description": "AI-Powered Lead Processing Pipeline",
         "docs": "/docs",
         "health": "/health",
+        "dashboard": "/dashboard",
     }

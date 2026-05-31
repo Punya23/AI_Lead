@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Geta.ai — Lead Pipeline Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ========================================
+       DESIGN TOKENS
+       ======================================== */
+    :root {
+      --bg-primary: #0f1117;
+      --bg-secondary: #161922;
+      --bg-card: #1c1f2e;
+      --bg-card-hover: #232738;
+      --bg-input: #12141d;
+      --border: #2a2d3e;
+      --border-focus: #6366f1;
+
+      --text-primary: #e8eaf0;
+      --text-secondary: #8b8fa3;
+      --text-muted: #5c5f73;
+
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --green: #10b981;
+      --green-soft: rgba(16, 185, 129, 0.12);
+      --amber: #f59e0b;
+      --amber-soft: rgba(245, 158, 11, 0.12);
+      --rose: #f43f5e;
+      --rose-soft: rgba(244, 63, 94, 0.12);
+      --blue: #3b82f6;
+      --blue-soft: rgba(59, 130, 246, 0.12);
+
+      --radius: 16px;
+      --radius-sm: 10px;
+      --radius-xs: 6px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.25);
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ========================================
+       RESET & BASE
+       ======================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ========================================
+       LAYOUT
+       ======================================== */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px 32px;
+    }
+
+    /* ========================================
+       HEADER
+       ======================================== */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent), #a855f7);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: white;
+    }
+
+    .header h1 {
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+
+    .header h1 span {
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 500;
+      background: var(--green-soft);
+      color: var(--green);
+      transition: var(--transition);
+    }
+
+    .status-badge.degraded {
+      background: var(--amber-soft);
+      color: var(--amber);
+    }
+
+    .status-badge.offline {
+      background: var(--rose-soft);
+      color: var(--rose);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .enrichment-mode {
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 100px;
+    }
+
+    /* ========================================
+       ANALYTICS CARDS
+       ======================================== */
+    .cards-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      transition: var(--transition);
+    }
+
+    .card:hover {
+      background: var(--bg-card-hover);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    .card-label {
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .card-value {
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+
+    .card-value.green { color: var(--green); }
+    .card-value.amber { color: var(--amber); }
+    .card-value.rose { color: var(--rose); }
+    .card-value.blue { color: var(--blue); }
+
+    /* ========================================
+       MAIN GRID
+       ======================================== */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+
+    /* ========================================
+       FORM
+       ======================================== */
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+    }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-title .icon {
+      width: 20px;
+      height: 20px;
+      opacity: 0.6;
+    }
+
+    .prefill-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .prefill-btn {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xs);
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .prefill-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(99, 102, 241, 0.06);
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      transition: var(--transition);
+      outline: none;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: white;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: 6px;
+      letter-spacing: 0.2px;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ========================================
+       RIGHT COLUMN
+       ======================================== */
+    .right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ========================================
+       PIPELINE VISUALIZER
+       ======================================== */
+    .pipeline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+    }
+
+    .stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      position: relative;
+    }
+
+    .stage-dot {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--bg-input);
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1;
+    }
+
+    .stage-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: var(--transition);
+    }
+
+    .stage.active .stage-dot {
+      background: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+      animation: stagePulse 1.5s ease-in-out infinite;
+    }
+
+    .stage.active .stage-label {
+      color: var(--accent);
+    }
+
+    .stage.done .stage-dot {
+      background: var(--green);
+      border-color: var(--green);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .stage.done .stage-label {
+      color: var(--green);
+    }
+
+    .stage.failed .stage-dot {
+      background: var(--rose);
+      border-color: var(--rose);
+      box-shadow: 0 0 12px rgba(244, 63, 94, 0.3);
+    }
+
+    .stage.failed .stage-label {
+      color: var(--rose);
+    }
+
+    @keyframes stagePulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); }
+      50% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.6); }
+    }
+
+    .stage-connector {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      margin: 0 -4px;
+      margin-bottom: 28px;
+      transition: var(--transition);
+    }
+
+    .stage-connector.active {
+      background: linear-gradient(90deg, var(--green), var(--accent));
+    }
+
+    .stage-connector.done {
+      background: var(--green);
+    }
+
+    /* ========================================
+       RESULT DISPLAY
+       ======================================== */
+    .result-panel {
+      display: none;
+    }
+
+    .result-panel.visible {
+      display: block;
+      animation: fadeSlideUp 0.4s ease-out;
+    }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 160px;
+      gap: 20px;
+    }
+
+    .enrichment-card {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-sm);
+      padding: 20px;
+    }
+
+    .enrichment-card h4 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 14px;
+    }
+
+    .enrichment-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .enrichment-row:last-child {
+      border-bottom: none;
+    }
+
+    .enrichment-key {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .enrichment-val {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .score-card {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-sm);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .score-circle {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      position: relative;
+    }
+
+    .score-circle.high {
+      background: var(--green-soft);
+      color: var(--green);
+      border: 3px solid var(--green);
+    }
+
+    .score-circle.medium {
+      background: var(--amber-soft);
+      color: var(--amber);
+      border: 3px solid var(--amber);
+    }
+
+    .score-circle.low {
+      background: var(--rose-soft);
+      color: var(--rose);
+      border: 3px solid var(--rose);
+    }
+
+    .score-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .routing-badge {
+      display: inline-block;
+      padding: 5px 14px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .routing-badge.sales { background: var(--green-soft); color: var(--green); }
+    .routing-badge.nurture { background: var(--amber-soft); color: var(--amber); }
+    .routing-badge.archive { background: var(--rose-soft); color: var(--rose); }
+
+    .ai-summary {
+      margin-top: 14px;
+      padding: 14px;
+      background: rgba(99, 102, 241, 0.06);
+      border-radius: var(--radius-xs);
+      border-left: 3px solid var(--accent);
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    .pain-points {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .pain-tag {
+      padding: 4px 10px;
+      background: var(--bg-card);
+      border-radius: 100px;
+      font-size: 11px;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    /* ========================================
+       ERROR DISPLAY
+       ======================================== */
+    .error-panel {
+      display: none;
+    }
+
+    .error-panel.visible {
+      display: block;
+      animation: fadeSlideUp 0.4s ease-out;
+    }
+
+    .error-box {
+      padding: 20px;
+      background: var(--rose-soft);
+      border: 1px solid rgba(244, 63, 94, 0.2);
+      border-radius: var(--radius-sm);
+      color: var(--rose);
+    }
+
+    .error-box h4 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .error-box p {
+      font-size: 13px;
+      opacity: 0.8;
+    }
+
+    /* ========================================
+       BOTTOM GRID
+       ======================================== */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 24px;
+    }
+
+    /* ========================================
+       RECENT LEADS TABLE
+       ======================================== */
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 14px 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+
+    tr:hover td {
+      background: rgba(255,255,255,0.02);
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .status-pill.complete { background: var(--green-soft); color: var(--green); }
+    .status-pill.validated,
+    .status-pill.enriched,
+    .status-pill.scored,
+    .status-pill.queued { background: var(--blue-soft); color: var(--blue); }
+    .status-pill.rejected { background: var(--rose-soft); color: var(--rose); }
+    .status-pill.failed { background: var(--rose-soft); color: var(--rose); }
+
+    /* ========================================
+       LIVE EVENTS FEED
+       ======================================== */
+    .events-feed {
+      max-height: 340px;
+      overflow-y: auto;
+      font-family: 'JetBrains Mono', 'SF Mono', monospace;
+      font-size: 12px;
+    }
+
+    .events-feed::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .events-feed::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .events-feed::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 2px;
+    }
+
+    .event-line {
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      animation: fadeIn 0.3s ease-out;
+      display: flex;
+      gap: 8px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .event-time {
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .event-stage {
+      color: var(--accent);
+      flex-shrink: 0;
+      min-width: 80px;
+    }
+
+    .event-msg {
+      color: var(--text-secondary);
+    }
+
+    .event-msg.success { color: var(--green); }
+    .event-msg.error { color: var(--rose); }
+
+    .no-events {
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 20px 0;
+      text-align: center;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+    }
+
+    /* ========================================
+       RESPONSIVE
+       ======================================== */
+    @media (max-width: 1024px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .bottom-grid { grid-template-columns: 1fr; }
+      .cards-row { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 600px) {
+      .cards-row { grid-template-columns: 1fr; }
+      .container { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- ===================== HEADER ===================== -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">G</div>
+        <h1>Geta.ai <span>Lead Pipeline</span></h1>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <span class="enrichment-mode" id="enrichmentMode">—</span>
+        <div class="status-badge" id="statusBadge">
+          <span class="status-dot"></span>
+          <span id="statusText">Connecting...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===================== ANALYTICS CARDS ===================== -->
+    <div class="cards-row">
+      <div class="card">
+        <div class="card-label">Total Leads</div>
+        <div class="card-value blue" id="totalLeads">0</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Qualified → Sales</div>
+        <div class="card-value green" id="qualifiedLeads">0</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Nurture Queue</div>
+        <div class="card-value amber" id="nurtureLeads">0</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Rejected</div>
+        <div class="card-value rose" id="rejectedLeads">0</div>
+      </div>
+    </div>
+
+    <!-- ===================== MAIN GRID ===================== -->
+    <div class="main-grid">
+
+      <!-- LEFT: Form -->
+      <div class="panel">
+        <div class="panel-title">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          Submit New Lead
+        </div>
+
+        <div class="prefill-row">
+          <button class="prefill-btn" onclick="prefillGood()">✓ Good Lead</button>
+          <button class="prefill-btn" onclick="prefillSpam()">✕ Spam Lead</button>
+          <button class="prefill-btn" onclick="prefillLow()">~ Low Intent</button>
+        </div>
+
+        <form id="leadForm" onsubmit="submitLead(event)">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="fname" placeholder="Sarah Chen" required>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="femail" placeholder="sarah@techflow.io" required>
+          </div>
+          <div class="form-group">
+            <label>Company</label>
+            <input type="text" id="fcompany" placeholder="TechFlow Solutions" required>
+          </div>
+          <div class="form-group">
+            <label>Message</label>
+            <textarea id="fmessage" placeholder="We need AI automation for our 1000+ daily tickets..." required></textarea>
+          </div>
+          <div class="form-group">
+            <label>Source</label>
+            <select id="fsource">
+              <option value="website_form">Website Form</option>
+              <option value="api">API</option>
+              <option value="csv">CSV Upload</option>
+              <option value="referral">Referral</option>
+            </select>
+          </div>
+          <button type="submit" class="submit-btn" id="submitBtn">Submit Lead →</button>
+        </form>
+      </div>
+
+      <!-- RIGHT: Pipeline + Results -->
+      <div class="right-col">
+
+        <!-- Pipeline Visualizer -->
+        <div class="panel">
+          <div class="panel-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Pipeline Progress
+          </div>
+          <div class="pipeline" id="pipeline">
+            <div class="stage" id="s-validated">
+              <div class="stage-dot">✓</div>
+              <span class="stage-label">Validated</span>
+            </div>
+            <div class="stage-connector" id="c-1"></div>
+            <div class="stage" id="s-enriched">
+              <div class="stage-dot">⚡</div>
+              <span class="stage-label">Enriched</span>
+            </div>
+            <div class="stage-connector" id="c-2"></div>
+            <div class="stage" id="s-scored">
+              <div class="stage-dot">★</div>
+              <span class="stage-label">Scored</span>
+            </div>
+            <div class="stage-connector" id="c-3"></div>
+            <div class="stage" id="s-routed">
+              <div class="stage-dot">→</div>
+              <span class="stage-label">Routed</span>
+            </div>
+            <div class="stage-connector" id="c-4"></div>
+            <div class="stage" id="s-complete">
+              <div class="stage-dot">●</div>
+              <span class="stage-label">Complete</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Result Display -->
+        <div class="panel result-panel" id="resultPanel">
+          <div class="panel-title">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Pipeline Result
+          </div>
+          <div class="result-grid">
+            <div class="enrichment-card">
+              <h4>AI Enrichment</h4>
+              <div class="enrichment-row"><span class="enrichment-key">Category</span><span class="enrichment-val" id="rCategory">—</span></div>
+              <div class="enrichment-row"><span class="enrichment-key">Intent</span><span class="enrichment-val" id="rIntent">—</span></div>
+              <div class="enrichment-row"><span class="enrichment-key">Urgency</span><span class="enrichment-val" id="rUrgency">—</span></div>
+              <div class="enrichment-row"><span class="enrichment-key">Company Type</span><span class="enrichment-val" id="rCompanyType">—</span></div>
+              <div class="pain-points" id="rPainPoints"></div>
+              <div class="ai-summary" id="rSummary" style="display:none;"></div>
+            </div>
+            <div class="score-card">
+              <div class="score-label">Lead Score</div>
+              <div class="score-circle" id="rScoreCircle">—</div>
+              <div class="routing-badge" id="rRoutingBadge">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error Display -->
+        <div class="panel error-panel" id="errorPanel">
+          <div class="error-box">
+            <h4 id="errorTitle">Rejected</h4>
+            <p id="errorMsg">—</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== BOTTOM GRID ===================== -->
+    <div class="bottom-grid">
+
+      <!-- Recent Leads -->
+      <div class="panel">
+        <div class="panel-title">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          Recent Leads
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Company</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody id="leadsTableBody">
+              <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No leads yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Live Events -->
+      <div class="panel">
+        <div class="panel-title">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          Live Events
+        </div>
+        <div class="events-feed" id="eventsFeed">
+          <div class="no-events">Waiting for pipeline events...</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ========================================
+    // STATE
+    // ========================================
+    const API = window.location.origin + '/api/v1';
+    let currentLeadId = null;
+    let pollTimer = null;
+    let eventSource = null;
+
+    // ========================================
+    // PREFILL EXAMPLES
+    // ========================================
+    function prefillGood() {
+      document.getElementById('fname').value = 'Sarah Chen';
+      document.getElementById('femail').value = 'sarah' + Date.now() + '@techflow.io';
+      document.getElementById('fcompany').value = 'TechFlow Solutions';
+      document.getElementById('fmessage').value = 'We are a mid-size SaaS company processing 1000+ customer tickets daily. Looking for AI automation to reduce response times and agent workload. Budget approved for Q3. Need something production-ready within 60 days.';
+      document.getElementById('fsource').value = 'website_form';
+    }
+
+    function prefillSpam() {
+      document.getElementById('fname').value = 'Crypto King';
+      document.getElementById('femail').value = 'winner@mailinator.com';
+      document.getElementById('fcompany').value = 'Quick Cash LLC';
+      document.getElementById('fmessage').value = 'Click here to buy cheap crypto tokens! Guaranteed 100x returns! Limited offer!!!';
+      document.getElementById('fsource').value = 'api';
+    }
+
+    function prefillLow() {
+      document.getElementById('fname').value = 'Alex Rivera';
+      document.getElementById('femail').value = 'alex' + Date.now() + '@university.edu';
+      document.getElementById('fcompany').value = 'State University Research Lab';
+      document.getElementById('fmessage').value = 'I am a graduate student researching AI applications in lead scoring. Could you share some information about how your system works?';
+      document.getElementById('fsource').value = 'website_form';
+    }
+
+    // ========================================
+    // SUBMIT LEAD
+    // ========================================
+    async function submitLead(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Processing...';
+
+      // Reset UI
+      resetPipeline();
+      hideResult();
+      hideError();
+
+      const payload = {
+        name: document.getElementById('fname').value,
+        email: document.getElementById('femail').value,
+        company: document.getElementById('fcompany').value,
+        message: document.getElementById('fmessage').value,
+        source: document.getElementById('fsource').value,
+      };
+
+      try {
+        const res = await fetch(API + '/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          showError(
+            res.status === 422 ? 'Lead Rejected' : 'Error',
+            err.detail?.reason || err.detail || JSON.stringify(err)
+          );
+          btn.disabled = false;
+          btn.textContent = 'Submit Lead →';
+          refreshAnalytics();
+          refreshLeads();
+          return;
+        }
+
+        const data = await res.json();
+        currentLeadId = data.lead_id;
+
+        // Mark validated immediately (sync validation passed)
+        setStage('s-validated', 'done');
+        setConnector('c-1', 'done');
+        addEvent('validation', 'PASSED', 'success');
+
+        // Poll for result
+        startPolling(currentLeadId);
+
+      } catch (err) {
+        showError('Network Error', err.message);
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Submit Lead →';
+    }
+
+    // ========================================
+    // POLLING FOR RESULT
+    // ========================================
+    function startPolling(leadId) {
+      let attempts = 0;
+      const maxAttempts = 40; // 20 seconds max
+
+      if (pollTimer) clearInterval(pollTimer);
+
+      // Set enrichment as active
+      setStage('s-enriched', 'active');
+
+      pollTimer = setInterval(async () => {
+        attempts++;
+        if (attempts > maxAttempts) {
+          clearInterval(pollTimer);
+          addEvent('timeout', 'Pipeline taking too long', 'error');
+          return;
+        }
+
+        try {
+          const res = await fetch(API + '/leads/' + leadId);
+          if (!res.ok) return;
+          const lead = await res.json();
+
+          // Update pipeline based on status
+          updatePipelineFromLead(lead);
+
+          // If terminal state, stop polling
+          if (['COMPLETE', 'FAILED', 'REJECTED'].includes(lead.status)) {
+            clearInterval(pollTimer);
+            if (lead.status === 'COMPLETE') {
+              showResult(lead);
+            }
+            refreshAnalytics();
+            refreshLeads();
+          }
+        } catch (e) {
+          // ignore, keep polling
+        }
+      }, 500);
+    }
+
+    function updatePipelineFromLead(lead) {
+      const status = lead.status;
+
+      if (status === 'VALIDATED') {
+        setStage('s-validated', 'done');
+        setStage('s-enriched', 'active');
+      }
+
+      if (lead.enrichment) {
+        setStage('s-enriched', 'done');
+        setConnector('c-2', 'done');
+        addEvent('enrichment', lead.enrichment.lead_category + ' / ' + lead.enrichment.estimated_intent, 'success');
+      }
+
+      if (lead.score) {
+        setStage('s-scored', 'done');
+        setConnector('c-3', 'done');
+        addEvent('scoring', 'Score: ' + lead.score.lead_score + '/100', 'success');
+      }
+
+      if (lead.routing_decision) {
+        setStage('s-routed', 'done');
+        setConnector('c-4', 'done');
+        addEvent('routing', '→ ' + lead.routing_decision.queue, 'success');
+      }
+
+      if (status === 'COMPLETE') {
+        setStage('s-complete', 'done');
+        addEvent('pipeline', 'COMPLETE ✓', 'success');
+      }
+
+      if (['ENRICHED', 'SCORED', 'ROUTED'].includes(status) && !lead.enrichment) {
+        setStage('s-enriched', 'active');
+      }
+      if (status === 'ENRICHED') {
+        setStage('s-scored', 'active');
+      }
+      if (status === 'SCORED') {
+        setStage('s-routed', 'active');
+      }
+    }
+
+    // ========================================
+    // PIPELINE UI HELPERS
+    // ========================================
+    function resetPipeline() {
+      ['s-validated','s-enriched','s-scored','s-routed','s-complete'].forEach(id => {
+        const el = document.getElementById(id);
+        el.className = 'stage';
+      });
+      ['c-1','c-2','c-3','c-4'].forEach(id => {
+        const el = document.getElementById(id);
+        el.className = 'stage-connector';
+      });
+    }
+
+    function setStage(id, state) {
+      const el = document.getElementById(id);
+      el.className = 'stage ' + state;
+    }
+
+    function setConnector(id, state) {
+      const el = document.getElementById(id);
+      el.className = 'stage-connector ' + state;
+    }
+
+    // ========================================
+    // RESULT DISPLAY
+    // ========================================
+    function showResult(lead) {
+      const panel = document.getElementById('resultPanel');
+      panel.classList.add('visible');
+
+      const e = lead.enrichment;
+      const s = lead.score;
+      const r = lead.routing_decision;
+
+      if (e) {
+        document.getElementById('rCategory').textContent = e.lead_category;
+        document.getElementById('rIntent').textContent = e.estimated_intent;
+        document.getElementById('rUrgency').textContent = e.urgency_level;
+        document.getElementById('rCompanyType').textContent = e.company_type;
+
+        const ppEl = document.getElementById('rPainPoints');
+        ppEl.innerHTML = '';
+        (e.pain_points || []).forEach(p => {
+          const tag = document.createElement('span');
+          tag.className = 'pain-tag';
+          tag.textContent = p;
+          ppEl.appendChild(tag);
+        });
+
+        if (e.ai_summary) {
+          const sumEl = document.getElementById('rSummary');
+          sumEl.textContent = e.ai_summary;
+          sumEl.style.display = 'block';
+        }
+      }
+
+      if (s) {
+        const scoreEl = document.getElementById('rScoreCircle');
+        scoreEl.textContent = s.lead_score;
+        scoreEl.className = 'score-circle ' + (s.lead_score >= 70 ? 'high' : s.lead_score >= 40 ? 'medium' : 'low');
+      }
+
+      if (r) {
+        const badge = document.getElementById('rRoutingBadge');
+        badge.textContent = r.queue.replace('_', ' ');
+        badge.className = 'routing-badge ' + (r.queue === 'SALES_QUEUE' ? 'sales' : r.queue === 'NURTURE_QUEUE' ? 'nurture' : 'archive');
+      }
+    }
+
+    function hideResult() {
+      document.getElementById('resultPanel').classList.remove('visible');
+    }
+
+    function showError(title, msg) {
+      const panel = document.getElementById('errorPanel');
+      document.getElementById('errorTitle').textContent = title;
+      document.getElementById('errorMsg').textContent = typeof msg === 'object' ? JSON.stringify(msg) : msg;
+      panel.classList.add('visible');
+    }
+
+    function hideError() {
+      document.getElementById('errorPanel').classList.remove('visible');
+    }
+
+    // ========================================
+    // EVENTS FEED
+    // ========================================
+    let eventCount = 0;
+
+    function addEvent(stage, msg, type = '') {
+      const feed = document.getElementById('eventsFeed');
+      if (eventCount === 0) feed.innerHTML = '';
+      eventCount++;
+
+      const now = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const line = document.createElement('div');
+      line.className = 'event-line';
+      line.innerHTML = `
+        <span class="event-time">${now}</span>
+        <span class="event-stage">${stage}</span>
+        <span class="event-msg ${type}">${msg}</span>
+      `;
+      feed.prepend(line);
+    }
+
+    // SSE connection for live events
+    function connectSSE() {
+      if (eventSource) eventSource.close();
+      eventSource = new EventSource(API + '/stream/pipeline');
+
+      eventSource.addEventListener('pipeline_event', (e) => {
+        try {
+          const data = JSON.parse(e.data);
+          const type = data.status === 'SUCCESS' ? 'success' : data.status === 'FAILED' ? 'error' : '';
+          addEvent(data.stage, `[${data.lead_id?.slice(0,8)}] ${data.status}`, type);
+
+          // If this event is for our current lead, update pipeline
+          if (currentLeadId && data.lead_id === currentLeadId) {
+            const stageMap = {
+              'enrichment': { stage: 's-enriched', connector: 'c-2' },
+              'scoring': { stage: 's-scored', connector: 'c-3' },
+              'routing': { stage: 's-routed', connector: 'c-4' },
+            };
+            const m = stageMap[data.stage];
+            if (m && data.status === 'SUCCESS') {
+              setStage(m.stage, 'done');
+              setConnector(m.connector, 'done');
+            } else if (m && data.status === 'STARTED') {
+              setStage(m.stage, 'active');
+            }
+          }
+        } catch(err) {}
+      });
+
+      eventSource.onerror = () => {
+        // SSE will auto-reconnect
+      };
+    }
+
+    // ========================================
+    // ANALYTICS & LEADS REFRESH
+    // ========================================
+    async function refreshAnalytics() {
+      try {
+        const res = await fetch(API + '/admin/analytics');
+        if (!res.ok) return;
+        const d = await res.json();
+        document.getElementById('totalLeads').textContent = d.total_leads || 0;
+        document.getElementById('qualifiedLeads').textContent = d.qualified || 0;
+        document.getElementById('nurtureLeads').textContent = d.nurture_queue || 0;
+        document.getElementById('rejectedLeads').textContent = d.rejected || 0;
+      } catch(e) {}
+    }
+
+    async function refreshLeads() {
+      try {
+        const res = await fetch(API + '/leads?limit=10');
+        if (!res.ok) return;
+        const d = await res.json();
+        const tbody = document.getElementById('leadsTableBody');
+
+        if (!d.leads || d.leads.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No leads yet</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = d.leads.map(l => {
+          const statusClass = l.status.toLowerCase();
+          const time = new Date(l.created_at).toLocaleTimeString('en-US', { hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
+          return `<tr>
+            <td style="color:var(--text-primary);font-weight:500;">${l.name}</td>
+            <td>${l.company}</td>
+            <td>${l.email}</td>
+            <td><span class="status-pill ${statusClass}">${l.status}</span></td>
+            <td>${time}</td>
+          </tr>`;
+        }).join('');
+      } catch(e) {}
+    }
+
+    // ========================================
+    // HEALTH CHECK
+    // ========================================
+    async function checkHealth() {
+      try {
+        const res = await fetch(window.location.origin + '/health');
+        if (!res.ok) throw new Error('unhealthy');
+        const d = await res.json();
+
+        const badge = document.getElementById('statusBadge');
+        const text = document.getElementById('statusText');
+        const mode = document.getElementById('enrichmentMode');
+
+        if (d.status === 'healthy') {
+          badge.className = 'status-badge';
+          text.textContent = 'System Healthy';
+        } else {
+          badge.className = 'status-badge degraded';
+          text.textContent = 'Degraded';
+        }
+
+        mode.textContent = d.enrichment_mode || 'unknown';
+      } catch(e) {
+        const badge = document.getElementById('statusBadge');
+        const text = document.getElementById('statusText');
+        badge.className = 'status-badge offline';
+        text.textContent = 'Offline';
+      }
+    }
+
+    // ========================================
+    // INIT
+    // ========================================
+    checkHealth();
+    refreshAnalytics();
+    refreshLeads();
+    connectSSE();
+
+    // Auto-refresh every 10s
+    setInterval(() => {
+      checkHealth();
+      refreshAnalytics();
+      refreshLeads();
+    }, 10000);
+  </script>
+</body>
+</html>
