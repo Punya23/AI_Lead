@@ -1442,32 +1442,42 @@
         <!-- CSV PANEL -->
         <div id="panel-csv" style="display:none;">
           <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">Bulk ingest structured lead files.
-            Select a template and upload mock system CSV documents.</p>
+            Download a template or upload your own CSV document.</p>
 
-          <div
-            style="background:var(--bg-primary); border:1px solid var(--border); border-radius:var(--radius-sm); padding:16px; margin-bottom:24px;">
+          <div style="background:var(--bg-primary); border:1px solid var(--border); border-radius:var(--radius-sm); padding:16px; margin-bottom:16px;">
             <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:13px;">
               <span style="color:var(--text-secondary);">Template Option:</span>
-              <span style="color:var(--text-primary); font-weight:500;">B2B SaaS Prospects.csv</span>
+              <span style="color:var(--text-primary); font-weight:500;">B2B SaaS Prospects</span>
             </div>
 
-            <div
-              style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; padding:12px; font-family:monospace; font-size:11px; overflow-x:auto; line-height:1.6;">
+            <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; padding:12px; font-family:monospace; font-size:11px; overflow-x:auto; line-height:1.6; margin-bottom:12px;">
               <div style="color:var(--text-muted);">name,email,company,message,source</div>
               <div style="color:var(--green);">Priya,priya@apexsec.io,ApexSec,Enterprise dynamic AI migration,csv_upload</div>
               <div style="color:var(--green);">Amit,amit@minishop.com,MiniShop,Small custom shop CRM migration,csv_upload</div>
               <div style="color:var(--rose);">Null,null@mailinator.com,FailCo,Malformed database structural data,csv_upload</div>
             </div>
+            
+            <button onclick="downloadCSVTemplate()" style="width:100%; padding:8px; background:rgba(99,102,241,0.1); color:var(--accent); border:1px solid rgba(99,102,241,0.2); border-radius:6px; font-size:12px; cursor:pointer; font-weight:500; text-align:center; transition:0.2s; display:flex; align-items:center; justify-content:center; gap:6px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Download Template CSV
+            </button>
+          </div>
+          
+          <div style="background:var(--bg-primary); border:1px solid var(--border); border-radius:var(--radius-sm); padding:16px; margin-bottom:16px;">
+             <div style="margin-bottom:12px; font-size:13px; color:var(--text-secondary);">Upload Real CSV:</div>
+             <input type="file" id="csvFileInput" accept=".csv" style="font-size:12px; color:var(--text-primary); margin-bottom:12px; width:100%;">
+             <button onclick="uploadRealCSV()" style="width:100%; padding:8px; background:var(--accent); color:#fff; border:none; border-radius:6px; font-size:12px; cursor:pointer; font-weight:500; display:flex; align-items:center; justify-content:center; gap:6px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                Upload File to Pipeline
+             </button>
           </div>
 
           <button onclick="simulateCSVUpload()" class="submit-btn"
-            style="background:var(--green); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px;">
+            style="background:rgba(255,255,255,0.05); color:var(--text-primary); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; gap:8px;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="17 8 12 3 7 8"></polyline>
-              <line x1="12" y1="3" x2="12" y2="15"></line>
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
             </svg>
-            Simulate CSV File Upload
+            Auto-Generate & Submit Batch
           </button>
         </div>
 
@@ -1783,26 +1793,29 @@
     // PREFILL EXAMPLES
     // ========================================
     function prefillGood() {
-      document.getElementById('fname').value = 'Rahul Sharma';
-      document.getElementById('femail').value = 'rahul' + Date.now() + '@techflow.in';
-      document.getElementById('fcompany').value = 'TechFlow Solutions';
-      document.getElementById('fmessage').value = 'We are a mid-size SaaS company processing 1000+ customer tickets daily. Looking for AI automation to reduce response times and agent workload. Budget approved for Q3. Need something production-ready within 60 days.';
+      const rid = Math.floor(Math.random() * 9000) + 1000;
+      document.getElementById('fname').value = 'Rahul Sharma ' + rid;
+      document.getElementById('femail').value = 'rahul' + rid + '@techflow.in';
+      document.getElementById('fcompany').value = 'TechFlow Solutions ' + rid;
+      document.getElementById('fmessage').value = 'We are a mid-size SaaS company processing 1000+ customer tickets daily. Looking for AI automation to reduce response times and agent workload. Budget approved for Q3. Need something production-ready within 60 days. Ref: ' + rid;
       document.getElementById('fsource').value = 'website_form';
     }
 
     function prefillSpam() {
-      document.getElementById('fname').value = 'Crypto King';
-      document.getElementById('femail').value = 'winner@mailinator.com';
-      document.getElementById('fcompany').value = 'Quick Cash LLC';
-      document.getElementById('fmessage').value = 'Click here to buy cheap crypto tokens! Guaranteed 100x returns! Limited offer!!!';
+      const rid = Math.floor(Math.random() * 9000) + 1000;
+      document.getElementById('fname').value = 'Crypto King ' + rid;
+      document.getElementById('femail').value = 'winner' + rid + '@mailinator.com';
+      document.getElementById('fcompany').value = 'Quick Cash LLC ' + rid;
+      document.getElementById('fmessage').value = 'Click here to buy cheap crypto tokens! Guaranteed 100x returns! Limited offer!!! ID: ' + rid;
       document.getElementById('fsource').value = 'api';
     }
 
     function prefillLow() {
-      document.getElementById('fname').value = 'Aditi Desai';
-      document.getElementById('femail').value = 'aditi' + Date.now() + '@university.ac.in';
-      document.getElementById('fcompany').value = 'State University Research Lab';
-      document.getElementById('fmessage').value = 'I am a graduate student researching AI applications in lead scoring. Could you share some information about how your system works?';
+      const rid = Math.floor(Math.random() * 9000) + 1000;
+      document.getElementById('fname').value = 'Aditi Desai ' + rid;
+      document.getElementById('femail').value = 'aditi' + rid + '@university.ac.in';
+      document.getElementById('fcompany').value = 'State University Research Lab ' + rid;
+      document.getElementById('fmessage').value = 'I am a graduate student researching AI applications in lead scoring. Could you share some information about how your system works? Inquiry: ' + rid;
       document.getElementById('fsource').value = 'website_form';
     }
 
@@ -1829,20 +1842,29 @@
     }
 
     async function submitWebhookLead() {
-      const payloadText = document.getElementById('webhook-payload').value;
+      let payloadText = document.getElementById('webhook-payload').value;
       let payload;
       try {
         payload = JSON.parse(payloadText);
+        // Randomize webhook payload slightly to bypass deduplication
+        const rid = Math.floor(Math.random() * 9000) + 1000;
+        payload.sender_name = payload.sender_name.replace(/\s\d+$/, '').trim() + ' ' + rid;
+        if (payload.needs_summary) {
+            payload.needs_summary = payload.needs_summary.replace(/Ref: \d+/, '').trim() + ' Ref: ' + rid;
+        }
+        document.getElementById('webhook-payload').value = JSON.stringify(payload, null, 2);
       } catch (e) {
         alert("Invalid JSON payload");
         return;
       }
+
       try {
-        const res = await fetch(API + '/webhooks/lead', {
+        const res = await fetch(API + '/webhooks/typeform', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
+        
         if (res.ok) {
           alert("Webhook payload sent successfully!");
         } else {
@@ -1854,25 +1876,76 @@
     }
 
     async function simulateCSVUpload() {
-      const csvData = `name,email,company,message,source\nPriya,priya@apexsec.io,ApexSec,Enterprise dynamic AI migration,csv_upload\nAmit,amit@minishop.com,MiniShop,Small custom shop CRM migration,csv_upload\nNull,null@mailinator.com,FailCo,Malformed database structural data,csv_upload`;
+      const rid = Math.floor(Math.random() * 9000) + 1000;
+      const csvData = `name,email,company,message,source
+Priya ${rid},priya${rid}@apexsec.io,ApexSec ${rid},Enterprise dynamic AI migration Ref: ${rid},csv_upload
+Amit ${rid},amit${rid}@minishop.com,MiniShop ${rid},Small custom shop CRM migration Ref: ${rid},csv_upload
+Null ${rid},null${rid}@mailinator.com,FailCo ${rid},Malformed database structural data Ref: ${rid},csv_upload`;
 
       const blob = new Blob([csvData], { type: 'text/csv' });
       const formData = new FormData();
-      formData.append('file', blob, 'B2B SaaS Prospects.csv');
+      formData.append('file', blob, 'B2B_SaaS_Prospects_Simulated.csv');
 
       try {
         const res = await fetch(API + '/leads/batch', {
           method: 'POST',
           body: formData
         });
+        
         if (res.ok) {
-          alert("CSV processing started! Check the pipeline.");
+          alert("Simulated Batch uploaded successfully!");
         } else {
           alert("Error uploading CSV");
         }
       } catch (e) {
         alert("Network error");
       }
+    }
+    
+    function downloadCSVTemplate() {
+        const csvData = `name,email,company,message,source
+Priya,priya@apexsec.io,ApexSec,Enterprise dynamic AI migration,csv_upload
+Amit,amit@minishop.com,MiniShop,Small custom shop CRM migration,csv_upload
+Null,null@mailinator.com,FailCo,Malformed database structural data,csv_upload`;
+        
+        const blob = new Blob([csvData], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('hidden', '');
+        a.setAttribute('href', url);
+        a.setAttribute('download', 'template.csv');
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+    
+    async function uploadRealCSV() {
+        const fileInput = document.getElementById('csvFileInput');
+        if (!fileInput.files || fileInput.files.length === 0) {
+            alert("Please select a CSV file first!");
+            return;
+        }
+        
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        try {
+            const res = await fetch(API + '/leads/batch', {
+              method: 'POST',
+              body: formData
+            });
+            
+            if (res.ok) {
+              const data = await res.json();
+              alert(`Batch uploaded successfully! Total: ${data.total}, Queued: ${data.queued}, Rejected: ${data.rejected.length}`);
+              fileInput.value = ""; // clear input
+            } else {
+              alert("Error processing CSV file");
+            }
+        } catch (e) {
+            alert("Network error while uploading CSV");
+        }
     }
 
     function showWebhookModal() {
