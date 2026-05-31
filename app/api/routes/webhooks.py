@@ -91,7 +91,8 @@ async def receive_webhook(
         # For non-duplicate rejections, store with unique hash suffix
         import uuid as _uuid
         reject_hash = (payload_hash or generate_payload_hash(
-            email or "unknown", company or "unknown", message or ""
+            email or "unknown", company or "unknown", message or "",
+            name=name or "", source=source or ""
         )) + f"_rejected_{_uuid.uuid4().hex[:8]}"
 
         rejected_lead = Lead(

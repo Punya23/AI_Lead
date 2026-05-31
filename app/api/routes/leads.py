@@ -81,7 +81,8 @@ async def create_lead(
         # For non-duplicate rejections, store with a unique hash suffix
         import uuid as _uuid
         reject_hash = (payload_hash or generate_payload_hash(
-            lead_request.email, lead_request.company, lead_request.message
+            lead_request.email, lead_request.company, lead_request.message,
+            name=lead_request.name, source=lead_request.source or ""
         )) + f"_rejected_{_uuid.uuid4().hex[:8]}"
 
         rejected_lead = Lead(
@@ -198,7 +199,8 @@ async def create_leads_batch(
                     message=message or "",
                     source=source,
                     payload_hash=payload_hash or generate_payload_hash(
-                        email or "unknown", company or "unknown", message or ""
+                        email or "unknown", company or "unknown", message or "",
+                        name=name or "", source=source or ""
                     ),
                     status="REJECTED",
                     failure_reason=failure_reason,

@@ -37,21 +37,23 @@ SPAM_KEYWORDS = [
 ]
 
 
-def generate_payload_hash(email: str, company: str, message: str) -> str:
+def generate_payload_hash(email: str, company: str, message: str, name: str = "", source: str = "") -> str:
     """Generate a deterministic content hash for deduplication.
 
-    Uses SHA-256 of normalized email + company + message.
+    Uses SHA-256 of normalized email + name + company + source + message.
     No timestamp component — same content always produces same hash.
 
     Args:
         email: Lead's email address.
         company: Lead's company name.
         message: Lead's message text.
+        name: Lead's name (optional).
+        source: Lead's source (optional).
 
     Returns:
         str: 64-character hex digest of the SHA-256 hash.
     """
-    content = f"{email.lower().strip()}::{company.lower().strip()}::{message.strip()}"
+    content = f"{email.lower().strip()}::{name.lower().strip()}::{company.lower().strip()}::{source.lower().strip()}::{message.strip()}"
     return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 
@@ -231,7 +233,7 @@ async def validate_lead(
         return False, reason, None
 
     # 6. Duplicate check (most expensive — hits DB)
-    payload_hash = generate_payload_hash(email, company, message)
+    payload_hash = generate_payload_hash(email, company, message, name=name, source=source)
     is_dup, reason, _ = await check_duplicate(db, payload_hash)
     if is_dup:
         logger.warning("Validation failed: duplicate", reason=reason, email=email)
