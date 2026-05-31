@@ -1453,10 +1453,10 @@
 
             <div
               style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; padding:12px; font-family:monospace; font-size:11px; overflow-x:auto; line-height:1.6;">
-              <div style="color:var(--text-muted);">name,company,employees,budget,desc</div>
-              <div style="color:var(--green);">Priya,ApexSec,850,95000,Enterprise dynamic AI migration</div>
-              <div style="color:var(--green);">Amit,MiniShop,4,1200,Small custom shop CRM migration</div>
-              <div style="color:var(--rose);">Null,FailCo,0,-1000,Malformed database structural data</div>
+              <div style="color:var(--text-muted);">name,email,company,message,source</div>
+              <div style="color:var(--green);">Priya,priya@apexsec.io,ApexSec,Enterprise dynamic AI migration,csv_upload</div>
+              <div style="color:var(--green);">Amit,amit@minishop.com,MiniShop,Small custom shop CRM migration,csv_upload</div>
+              <div style="color:var(--rose);">Null,null@mailinator.com,FailCo,Malformed database structural data,csv_upload</div>
             </div>
           </div>
 
@@ -1854,7 +1854,7 @@
     }
 
     async function simulateCSVUpload() {
-      const csvData = `name,company,employees,budget,desc\nPriya,ApexSec,850,95000,Enterprise dynamic AI migration\nAmit,MiniShop,4,1200,Small custom shop CRM migration\nNull,FailCo,0,-1000,Malformed database structural data`;
+      const csvData = `name,email,company,message,source\nPriya,priya@apexsec.io,ApexSec,Enterprise dynamic AI migration,csv_upload\nAmit,amit@minishop.com,MiniShop,Small custom shop CRM migration,csv_upload\nNull,null@mailinator.com,FailCo,Malformed database structural data,csv_upload`;
 
       const blob = new Blob([csvData], { type: 'text/csv' });
       const formData = new FormData();

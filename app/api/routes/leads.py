@@ -192,6 +192,7 @@ async def create_leads_batch(
 
             # Store rejected lead
             try:
+                import uuid as _uuid
                 rejected_lead = Lead(
                     raw_payload=dict(row),
                     email=email or "unknown@invalid.com",
@@ -199,10 +200,10 @@ async def create_leads_batch(
                     company=company or "Unknown",
                     message=message or "",
                     source=source,
-                    payload_hash=payload_hash or generate_payload_hash(
+                    payload_hash=(payload_hash or generate_payload_hash(
                         email or "unknown", company or "unknown", message or "",
                         name=name or "", source=source or ""
-                    ),
+                    )) + f"_rejected_{_uuid.uuid4().hex[:8]}",
                     status="REJECTED",
                     failure_reason=failure_reason,
                 )
