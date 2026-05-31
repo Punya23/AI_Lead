@@ -14,7 +14,7 @@ The pipeline separates **synchronous validation** (rejections under 10ms) from *
 
 Every lead transitions through a tracked state machine:
 
-![Pipeline Architecture](docs/pipeline_architecture.png)
+![State Machine](docs/state_machine.png)
 
 ---
 
@@ -31,6 +31,10 @@ The system is designed to fail open. If ChromaDB or the embedding API is down, t
 - **Gibberish Detection:** Mathematical character-to-letter ratio checks catch keyboard mashing
 - **Spam Keywords:** Pattern matching for known spam phrases
 - **SHA-256 Payload Hashing:** Deterministic content hash prevents exact duplicates
+
+### Real-Time SSE Dashboard
+
+A live processing dashboard streams pipeline events over Server-Sent Events as leads move through the pipeline. Open `http://localhost:8000/dashboard` to watch leads transition from RECEIVED → VALIDATED → ENRICHED → SCORED → ROUTED in real time. No polling. No page refresh. Failures, retries, and dead-letter events appear instantly.
 
 ### Scoring Model
 
@@ -92,27 +96,6 @@ LEAD_PIPELINE_RETRY_POLICY = {
 
 ---
 
-## Quick Start
-
-```bash
-# Clone
-git clone https://github.com/Punya23/AI_Lead.git
-cd geta-lead-pipeline
-
-# Copy env (optional: add GOOGLE_API_KEY for real LLM enrichment)
-cp .env.example .env
-
-# Start everything
-docker compose up --build
-
-# Open dashboard
-open http://localhost:8000/dashboard
-```
-
-No API key is required. The system detects missing keys and falls back to a deterministic, keyword based mock enrichment engine. The full pipeline, dashboard, and routing logic work identically.
-
----
-
 ## Environment Variables
 
 | Variable | Default | Description |
@@ -127,6 +110,53 @@ No API key is required. The system detects missing keys and falls back to a dete
 | `SEMANTIC_SIMILARITY_THRESHOLD` | `0.85` | ChromaDB cosine similarity cutoff |
 | `SLACK_WEBHOOK_URL` | *(empty)* | Slack notification webhook |
 | `DISCORD_WEBHOOK_URL` | *(empty)* | Discord notification webhook |
+
+---
+
+## Demo Walkthrough
+
+No API key is required. The system detects missing keys and falls back to a deterministic, keyword based mock enrichment engine.
+
+```bash
+# 1. Start the system
+docker compose up --build
+```
+
+After the containers are running, open a new terminal tab and try the following:
+
+```bash
+# 2. Submit a high-intent lead
+curl -X POST http://localhost:8000/api/v1/leads \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Sarah Chen","email":"sarah@acmecorp.io",
+       "company":"Acme SaaS","message":"We need AI automation for our outbound sales pipeline urgently. Budget approved."}'
+
+# 3. Upload a CSV batch
+# A sample CSV with 5 leads is included in scripts/
+curl -X POST http://localhost:8000/api/v1/leads/batch \
+  -F "file=@scripts/demo_leads.csv"
+```
+
+**Watch real-time processing:**
+Open `http://localhost:8000/dashboard` in your browser.
+
+**Check lead state:**
+```bash
+# Replace {lead_id} with an ID from the dashboard or curl responses
+curl http://localhost:8000/api/v1/leads/{lead_id}
+```
+
+**View failed/flagged leads:**
+```bash
+curl http://localhost:8000/api/v1/admin/failures
+```
+
+**Simulate failures:**
+```bash
+# In .env, set: SIMULATE_FAILURES=true
+# Then restart:
+docker compose up
+```
 
 ---
 
