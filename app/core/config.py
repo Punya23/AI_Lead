@@ -36,7 +36,7 @@ class Settings(BaseSettings):
 
     # --- LLM (Google Gemini) ---
     GOOGLE_API_KEY: str = ""
-    LLM_MODEL: str = "gemini-2.0-flash"
+    LLM_MODEL: str = "gemini-2.5-flash"
     LLM_TEMPERATURE: float = 0.2
     LLM_MAX_RETRIES: int = 3
     LLM_TIMEOUT_SECONDS: int = 30

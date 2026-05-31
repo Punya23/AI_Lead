@@ -213,7 +213,18 @@ def _maybe_simulate_failure(lead_id: str | None = None) -> None:
         LLMMalformedResponseError: Simulated malformed response.
         LLMRateLimitError: Simulated rate limit.
     """
-    if not settings.SIMULATE_FAILURES:
+    simulate = settings.SIMULATE_FAILURES
+    try:
+        import redis
+        r = redis.from_url(settings.REDIS_URL)
+        val = r.get("SIMULATE_FAILURES")
+        if val is not None:
+            simulate = (val.decode('utf-8').lower() == "true")
+        r.close()
+    except Exception as e:
+        logger.warning(f"Could not connect to Redis to check failure simulation flag: {e}")
+
+    if not simulate:
         return
 
     roll = random.random()
@@ -339,6 +350,7 @@ def call_enrichment_llm(
                 contents=prompt,
                 config=GenerateContentConfig(
                     response_mime_type="application/json",
+                    response_schema=EnrichmentResult,
                     temperature=settings.LLM_TEMPERATURE,
                 ),
             )
@@ -346,8 +358,18 @@ def call_enrichment_llm(
             raw_text = response.text
             logger.debug("LLM raw response", lead_id=lead_id, response_length=len(raw_text))
 
+            # Clean markdown code blocks if present
+            clean_text = raw_text.strip()
+            if clean_text.startswith("```"):
+                lines = clean_text.split("\n")
+                if lines[0].startswith("```"):
+                    lines = lines[1:]
+                if lines and lines[-1].startswith("```"):
+                    lines = lines[:-1]
+                clean_text = "\n".join(lines).strip()
+
             # Parse and validate against Pydantic schema
-            parsed = json.loads(raw_text)
+            parsed = json.loads(clean_text)
             result = EnrichmentResult(**parsed)
 
             logger.info(
@@ -367,6 +389,7 @@ def call_enrichment_llm(
                 lead_id=lead_id,
                 attempt=attempt,
                 error=str(e),
+                raw_text=raw_text,
             )
 
             # Add corrective suffix for next attempt

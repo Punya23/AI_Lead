@@ -227,3 +227,8 @@ geta-lead-pipeline/
 ├── DEBUGGING.md            # Operational runbook
 └── docker-compose.yml      # One-command startup
 ```
+
+### Handling Edge Cases & Difficulties
+
+**Semantic Deduplication (Anti-Spam)**
+One of the core difficulties in ingestion pipelines is handling sophisticated spam bots that rotate email addresses and names to bypass traditional unique constraints. To solve this, the pipeline embeds the `message` content into a vector database (ChromaDB). If a new lead arrives with a `1.0` semantic similarity to an existing lead—even if the name and email are completely different—the system instantly flags it as a `SEMANTIC_DUPLICATE` and safely routes it to the Dead-Letter Queue.

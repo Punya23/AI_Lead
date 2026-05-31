@@ -226,3 +226,46 @@ async def get_vector_store_info():
         "similarity_threshold": settings.SEMANTIC_SIMILARITY_THRESHOLD,
         "embedding_model": "text-embedding-004",
     }
+
+
+@router.get("/queue/{queue_name}")
+async def get_queue_leads(
+    queue_name: str,
+    limit: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_async_session),
+):
+    """Get leads that were routed to a specific queue.
+    queue_name could be: SALES_QUEUE, NURTURE_QUEUE, ARCHIVE.
+    """
+    from sqlalchemy.orm import selectinload
+    from app.models.routing import RoutingDecision
+
+    query = (
+        select(Lead)
+        .join(RoutingDecision)
+        .where(RoutingDecision.queue == queue_name)
+        .options(
+            selectinload(Lead.enrichment),
+            selectinload(Lead.score),
+            selectinload(Lead.routing_decision)
+        )
+        .order_by(Lead.created_at.desc())
+        .limit(limit)
+    )
+
+    result = await db.execute(query)
+    leads = result.scalars().all()
+
+    # Convert to a dict to easily use in JS
+    return [
+        {
+            "id": str(lead.id),
+            "name": lead.name,
+            "company": lead.company,
+            "score": lead.score.lead_score if lead.score else 0,
+            "category": lead.enrichment.lead_category if lead.enrichment else "",
+            "summary": lead.enrichment.ai_summary if lead.enrichment else "",
+            "created_at": lead.created_at.isoformat(),
+        }
+        for lead in leads
+    ]

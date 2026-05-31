@@ -27,6 +27,7 @@ from app.api.routes.leads import router as leads_router
 from app.api.routes.webhooks import router as webhooks_router
 from app.api.routes.admin import router as admin_router
 from app.api.routes.stream import router as stream_router
+from app.api.routes.config import router as config_router
 
 
 @asynccontextmanager
@@ -118,6 +119,7 @@ app.include_router(leads_router)
 app.include_router(webhooks_router)
 app.include_router(admin_router)
 app.include_router(stream_router)
+app.include_router(config_router)
 
 # --- Static Files & Dashboard ---
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
