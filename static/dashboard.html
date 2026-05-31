@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,12 +12,12 @@
        DESIGN TOKENS
        ======================================== */
     :root {
-      --bg-primary: #0f1117;
-      --bg-secondary: #161922;
-      --bg-card: #1c1f2e;
-      --bg-card-hover: #232738;
-      --bg-input: #12141d;
-      --border: #2a2d3e;
+      --bg-primary: #000000;
+      --bg-secondary: #0a0a0a;
+      --bg-card: #141414;
+      --bg-card-hover: #1f1f1f;
+      --bg-input: #0a0a0a;
+      --border: #262626;
       --border-focus: #6366f1;
 
       --text-primary: #e8eaf0;
@@ -37,14 +38,20 @@
       --radius: 16px;
       --radius-sm: 10px;
       --radius-xs: 6px;
-      --shadow: 0 4px 24px rgba(0,0,0,0.25);
+      --shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
       --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     /* ========================================
        RESET & BASE
        ======================================== */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
       font-family: 'Inter', -apple-system, sans-serif;
@@ -138,8 +145,15 @@
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.4;
+      }
     }
 
     .enrichment-mode {
@@ -190,10 +204,21 @@
       line-height: 1;
     }
 
-    .card-value.green { color: var(--green); }
-    .card-value.amber { color: var(--amber); }
-    .card-value.rose { color: var(--rose); }
-    .card-value.blue { color: var(--blue); }
+    .card-value.green {
+      color: var(--green);
+    }
+
+    .card-value.amber {
+      color: var(--amber);
+    }
+
+    .card-value.rose {
+      color: var(--rose);
+    }
+
+    .card-value.blue {
+      color: var(--blue);
+    }
 
     /* ========================================
        MAIN GRID
@@ -337,105 +362,131 @@
     }
 
     /* ========================================
-       PIPELINE VISUALIZER
+       INTERACTIVE STATE FLOW DIAGRAM
        ======================================== */
-    .pipeline {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 0;
+    .state-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      position: relative;
+      z-index: 10;
+      margin-top: 16px;
     }
 
-    .stage {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      flex: 1;
+    .state-node {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      transition: var(--transition);
       position: relative;
     }
 
-    .stage-dot {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: var(--bg-input);
-      border: 2px solid var(--border);
+    .state-node.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 16px rgba(99, 102, 241, 0.15);
+      animation: pulse-border 2s infinite;
+    }
+
+    .state-node.passed {
+      border-color: var(--green);
+    }
+
+    .state-node.failed {
+      border-color: var(--rose);
+    }
+
+    @keyframes pulse-border {
+
+      0%,
+      100% {
+        border-color: rgba(99, 102, 241, 0.4);
+      }
+
+      50% {
+        border-color: rgba(99, 102, 241, 1);
+      }
+    }
+
+    .state-node-header {
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-      z-index: 1;
+      justify-content: space-between;
+      margin-bottom: 4px;
     }
 
-    .stage-label {
-      font-size: 11px;
-      font-weight: 500;
+    .state-node-step {
+      font-size: 9px;
+      font-family: monospace;
       color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      transition: var(--transition);
     }
 
-    .stage.active .stage-dot {
-      background: var(--accent);
-      border-color: var(--accent);
-      box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
-      animation: stagePulse 1.5s ease-in-out infinite;
-    }
-
-    .stage.active .stage-label {
-      color: var(--accent);
-    }
-
-    .stage.done .stage-dot {
-      background: var(--green);
-      border-color: var(--green);
-      box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
-    }
-
-    .stage.done .stage-label {
-      color: var(--green);
-    }
-
-    .stage.failed .stage-dot {
-      background: var(--rose);
-      border-color: var(--rose);
-      box-shadow: 0 0 12px rgba(244, 63, 94, 0.3);
-    }
-
-    .stage.failed .stage-label {
-      color: var(--rose);
-    }
-
-    @keyframes stagePulse {
-      0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); }
-      50% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.6); }
-    }
-
-    .stage-connector {
-      flex: 1;
-      height: 2px;
+    .state-node-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
       background: var(--border);
-      margin: 0 -4px;
-      margin-bottom: 28px;
-      transition: var(--transition);
     }
 
-    .stage-connector.active {
-      background: linear-gradient(90deg, var(--green), var(--accent));
+    .state-node.active .state-node-dot {
+      background: var(--accent);
+      animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
     }
 
-    .stage-connector.done {
+    @keyframes ping {
+
+      75%,
+      100% {
+        transform: scale(2);
+        opacity: 0;
+      }
+    }
+
+    .state-node.passed .state-node-dot {
       background: var(--green);
+    }
+
+    .state-node.failed .state-node-dot {
+      background: var(--rose);
+    }
+
+    .state-node-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .state-node-desc {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    .pipeline-loader-bar {
+      width: 100%;
+      background: var(--bg-primary);
+      height: 6px;
+      margin-top: 16px;
+      border-radius: 99px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      position: relative;
+    }
+
+    .pipeline-progress {
+      background: linear-gradient(90deg, var(--accent), #a855f7, var(--green));
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s ease;
     }
 
     /* ========================================
        RESULT DISPLAY
        ======================================== */
     .result-panel {
-      display: none;
+      display: block; /* now visible by default for the placeholder */
+      min-height: 200px;
     }
 
     .result-panel.visible {
@@ -444,8 +495,15 @@
     }
 
     @keyframes fadeSlideUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .result-grid {
@@ -473,7 +531,7 @@
       display: flex;
       justify-content: space-between;
       padding: 7px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     }
 
     .enrichment-row:last-child {
@@ -550,9 +608,20 @@
       letter-spacing: 0.3px;
     }
 
-    .routing-badge.sales { background: var(--green-soft); color: var(--green); }
-    .routing-badge.nurture { background: var(--amber-soft); color: var(--amber); }
-    .routing-badge.archive { background: var(--rose-soft); color: var(--rose); }
+    .routing-badge.sales {
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .routing-badge.nurture {
+      background: var(--amber-soft);
+      color: var(--amber);
+    }
+
+    .routing-badge.archive {
+      background: var(--rose-soft);
+      color: var(--rose);
+    }
 
     .ai-summary {
       margin-top: 14px;
@@ -579,6 +648,97 @@
       font-size: 11px;
       color: var(--text-secondary);
       border: 1px solid var(--border);
+    }
+
+    /* ========================================
+       FORM TABS & UPLOAD
+       ======================================== */
+    .form-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+
+    .form-tab-btn {
+      padding: 8px 16px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all 0.2s;
+    }
+
+    .form-tab-btn.active {
+      background: rgba(99, 102, 241, 0.1);
+      color: var(--accent);
+    }
+
+    .form-tab-btn:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-primary);
+    }
+
+    .upload-area {
+      display: block;
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-sm);
+      padding: 40px 20px;
+      text-align: center;
+      transition: all 0.2s;
+      background: rgba(255, 255, 255, 0.01);
+      cursor: pointer;
+    }
+
+    .upload-area:hover,
+    .upload-area.dragover {
+      border-color: var(--accent);
+      background: rgba(99, 102, 241, 0.03);
+    }
+
+    .upload-icon {
+      color: var(--accent);
+      margin: 0 auto 12px auto;
+      display: block;
+    }
+
+    .upload-text {
+      color: var(--text-secondary);
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .upload-subtext {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .webhook-info-btn {
+      margin-left: auto;
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .webhook-info-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-primary);
     }
 
     /* ========================================
@@ -613,65 +773,266 @@
     }
 
     /* ========================================
-       BOTTOM GRID
+       QUEUE TAB SYSTEM & DATABASE VIEWS
        ======================================== */
-    .bottom-grid {
+    .db-queue-grid {
       display: grid;
-      grid-template-columns: 1fr 380px;
+      grid-template-columns: 1fr 2fr;
       gap: 24px;
+      margin-top: 24px;
     }
 
-    /* ========================================
-       RECENT LEADS TABLE
-       ======================================== */
-    .table-wrapper {
-      overflow-x: auto;
+    .db-box {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      height: 250px;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
+    .db-box-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
     }
 
-    th {
-      text-align: left;
+    .db-box-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .db-badge {
+      font-size: 10px;
+      font-family: monospace;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .db-badge.pg {
+      background: rgba(99, 102, 241, 0.1);
+      color: #818cf8;
+    }
+
+    .db-badge.vec {
+      background: rgba(168, 85, 247, 0.1);
+      color: #c084fc;
+    }
+
+    .db-list {
+      flex-grow: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .db-item {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      padding: 10px;
+      border-radius: 6px;
       font-size: 11px;
+    }
+
+    .queue-tabs {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .q-tab {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 4px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .q-tab-label {
+      font-size: 10px;
+      text-transform: uppercase;
       font-weight: 600;
       color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
     }
 
-    td {
-      padding: 14px 16px;
-      font-size: 13px;
-      color: var(--text-secondary);
-      border-bottom: 1px solid rgba(255,255,255,0.03);
+    .q-tab-count {
+      font-size: 16px;
+      font-weight: 700;
+      font-family: monospace;
     }
 
-    tr:hover td {
-      background: rgba(255,255,255,0.02);
+    .q-tab.sales {
+      color: var(--green);
     }
 
-    .status-pill {
-      display: inline-block;
-      padding: 3px 10px;
-      border-radius: 100px;
-      font-size: 11px;
+    .q-tab.nurture {
+      color: var(--amber);
+    }
+
+    .q-tab.archive {
+      color: var(--rose);
+    }
+
+    .q-tab.dlq {
+      color: #ef4444;
+    }
+
+    .q-tab.notifs {
+      color: var(--accent);
+    }
+
+    .q-tab.active {
+      border-color: currentColor;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .queue-content {
+      height: 420px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .queue-card {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      animation: fadeSlideUp 0.3s ease-out;
+    }
+
+    .queue-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .qc-name {
+      font-size: 14px;
       font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.3px;
+      color: white;
     }
 
-    .status-pill.complete { background: var(--green-soft); color: var(--green); }
+    .qc-company {
+      font-size: 11px;
+      font-family: monospace;
+      color: var(--text-muted);
+    }
+
+    .qc-score {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: monospace;
+    }
+
+    .qc-info {
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .qc-summary {
+      background: rgba(99, 102, 241, 0.05);
+      border: 1px solid rgba(99, 102, 241, 0.1);
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #e2e8f0;
+      font-style: italic;
+      margin-top: 8px;
+    }
+
+    .qc-dlq {
+      background: rgba(239, 68, 68, 0.05);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #fca5a5;
+    }
+
+    /* Terminal logs */
+    .terminal-box {
+      background: #09090b;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      height: 200px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 11px;
+      color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .t-log {
+      line-height: 1.4;
+    }
+
+    .t-time {
+      color: var(--text-muted);
+      margin-right: 8px;
+    }
+
+    .t-info {
+      color: var(--text-primary);
+    }
+
+    .t-success {
+      color: var(--green);
+    }
+
+    .t-error {
+      color: var(--rose);
+    }
+
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    }
+
+    .status-pill.complete {
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
     .status-pill.validated,
     .status-pill.enriched,
     .status-pill.scored,
-    .status-pill.queued { background: var(--blue-soft); color: var(--blue); }
-    .status-pill.rejected { background: var(--rose-soft); color: var(--rose); }
-    .status-pill.failed { background: var(--rose-soft); color: var(--rose); }
+    .status-pill.queued {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .status-pill.rejected {
+      background: var(--rose-soft);
+      color: var(--rose);
+    }
+
+    .status-pill.failed {
+      background: var(--rose-soft);
+      color: var(--rose);
+    }
 
     /* ========================================
        LIVE EVENTS FEED
@@ -698,15 +1059,20 @@
 
     .event-line {
       padding: 6px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.03);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
       animation: fadeIn 0.3s ease-out;
       display: flex;
       gap: 8px;
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
     }
 
     .event-time {
@@ -724,8 +1090,13 @@
       color: var(--text-secondary);
     }
 
-    .event-msg.success { color: var(--green); }
-    .event-msg.error { color: var(--rose); }
+    .event-msg.success {
+      color: var(--green);
+    }
+
+    .event-msg.error {
+      color: var(--rose);
+    }
 
     .no-events {
       color: var(--text-muted);
@@ -751,7 +1122,7 @@
       grid-template-columns: repeat(2, 1fr);
       gap: 12px;
     }
-    
+
     .infra-box {
       background: var(--bg-input);
       border: 1px solid var(--border);
@@ -763,7 +1134,7 @@
       justify-content: center;
       text-align: center;
     }
-    
+
     .infra-label {
       font-size: 11px;
       font-weight: 600;
@@ -807,9 +1178,18 @@
       border-radius: 100px;
       transition: width 0.5s ease-out;
     }
-    .route-bar-fill.sales { background: var(--green); }
-    .route-bar-fill.nurture { background: var(--amber); }
-    .route-bar-fill.archive { background: var(--rose); }
+
+    .route-bar-fill.sales {
+      background: var(--green);
+    }
+
+    .route-bar-fill.nurture {
+      background: var(--amber);
+    }
+
+    .route-bar-fill.archive {
+      background: var(--rose);
+    }
 
     .route-total {
       margin-top: 16px;
@@ -823,15 +1203,18 @@
       display: flex;
       justify-content: space-between;
       padding: 10px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     }
+
     .chroma-row:last-child {
       border-bottom: none;
     }
+
     .chroma-key {
       font-size: 13px;
       color: var(--text-muted);
     }
+
     .chroma-val {
       font-size: 13px;
       font-weight: 500;
@@ -845,7 +1228,7 @@
       border-top: 1px solid var(--border);
       display: none;
     }
-    
+
     .timeline-title {
       font-size: 12px;
       font-weight: 600;
@@ -861,36 +1244,68 @@
       gap: 12px;
       padding: 6px 0;
       font-size: 12px;
-      border-bottom: 1px solid rgba(255,255,255,0.02);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.02);
       font-family: 'JetBrains Mono', 'SF Mono', monospace;
     }
-    
+
     .timeline-row:last-child {
       border-bottom: none;
     }
 
-    .timeline-stage { color: var(--text-secondary); font-weight: 500; }
-    .timeline-status.success { color: var(--green); }
-    .timeline-status.failed { color: var(--rose); }
-    .timeline-duration { color: var(--accent); }
-    .timeline-time { color: var(--text-muted); }
+    .timeline-stage {
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .timeline-status.success {
+      color: var(--green);
+    }
+
+    .timeline-status.failed {
+      color: var(--rose);
+    }
+
+    .timeline-duration {
+      color: var(--accent);
+    }
+
+    .timeline-time {
+      color: var(--text-muted);
+    }
 
     /* ========================================
        RESPONSIVE
        ======================================== */
     @media (max-width: 1024px) {
-      .main-grid { grid-template-columns: 1fr; }
-      .bottom-grid { grid-template-columns: 1fr; }
-      .stats-grid { grid-template-columns: 1fr; }
-      .cards-row { grid-template-columns: repeat(2, 1fr); }
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .bottom-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .cards-row {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
 
     @media (max-width: 600px) {
-      .cards-row { grid-template-columns: 1fr; }
-      .container { padding: 16px; }
+      .cards-row {
+        grid-template-columns: 1fr;
+      }
+
+      .container {
+        padding: 16px;
+      }
     }
   </style>
 </head>
+
 <body>
   <div class="container">
 
@@ -933,97 +1348,231 @@
 
       <!-- LEFT: Form -->
       <div class="panel">
-        <div class="panel-title">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-          Submit New Lead
+        <div class="panel-title" style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="display:flex; align-items:center;">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 12px;">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/>
+            </svg>
+            Intake Layer Control
+          </div>
         </div>
 
-        <div class="prefill-row">
-          <button class="prefill-btn" onclick="prefillGood()">✓ Good Lead</button>
-          <button class="prefill-btn" onclick="prefillSpam()">✕ Spam Lead</button>
-          <button class="prefill-btn" onclick="prefillLow()">~ Low Intent</button>
+        <div class="form-tabs" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 4px; border:none; background:var(--bg-primary); padding:4px; border-radius:var(--radius-sm); border:1px solid var(--border); margin-bottom: 24px;">
+          <button class="form-tab-btn active" id="tab-api" onclick="switchTab('api')" style="width:100%; border-radius:6px; background:rgba(99, 102, 241, 0.1); color:var(--accent);">REST API</button>
+          <button class="form-tab-btn" id="tab-csv" onclick="switchTab('csv')" style="width:100%; border-radius:6px;">CSV Upload</button>
+          <button class="form-tab-btn" id="tab-webhook" onclick="switchTab('webhook')" style="width:100%; border-radius:6px;">Webhook</button>
         </div>
 
-        <form id="leadForm" onsubmit="submitLead(event)">
-          <div class="form-group">
-            <label>Full Name</label>
-            <input type="text" id="fname" placeholder="Sarah Chen" required>
+        <!-- API PANEL -->
+        <div id="panel-api" style="display:block;">
+          <div class="prefill-row" style="display:flex; gap:8px; margin-bottom:16px;">
+            <button type="button" class="prefill-btn" onclick="prefillGood()" style="flex:1; padding:6px 12px; background:rgba(16,185,129,0.1); color:var(--green); border:1px solid rgba(16,185,129,0.2); border-radius:6px; font-size:11px; cursor:pointer; font-weight:500; text-align:center; transition:0.2s;">Good Lead</button>
+            <button type="button" class="prefill-btn" onclick="prefillSpam()" style="flex:1; padding:6px 12px; background:rgba(244,63,94,0.1); color:var(--rose); border:1px solid rgba(244,63,94,0.2); border-radius:6px; font-size:11px; cursor:pointer; font-weight:500; text-align:center; transition:0.2s;">Spam Lead</button>
+            <button type="button" class="prefill-btn" onclick="prefillLow()" style="flex:1; padding:6px 12px; background:rgba(99,102,241,0.1); color:var(--accent); border:1px solid rgba(99,102,241,0.2); border-radius:6px; font-size:11px; cursor:pointer; font-weight:500; text-align:center; transition:0.2s;">Low Intent</button>
           </div>
-          <div class="form-group">
-            <label>Email</label>
-            <input type="email" id="femail" placeholder="sarah@techflow.io" required>
+          
+          <form id="leadForm" onsubmit="submitLead(event)">
+            <div class="form-group" style="margin-bottom:12px;">
+              <label style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Full Name</label>
+              <input type="text" id="fname" placeholder="Rahul Sharma" required>
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+              <label style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Email</label>
+              <input type="email" id="femail" placeholder="rahul@techflow.in" required>
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+              <label style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Company</label>
+              <input type="text" id="fcompany" placeholder="TechFlow Solutions" required>
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+              <label style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Message</label>
+              <textarea id="fmessage" placeholder="We need AI automation for our 1000+ daily tickets..." required style="min-height:60px;"></textarea>
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+              <label style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Source</label>
+              <select id="fsource">
+                <option value="website_form">Website Form</option>
+                <option value="api">API</option>
+                <option value="csv">CSV Upload</option>
+                <option value="referral">Referral</option>
+              </select>
+            </div>
+            <div class="form-group" style="padding-top: 12px; border-top: 1px solid var(--border); margin-top: 8px; margin-bottom: 16px;">
+              <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; color:var(--rose); font-weight:500;">
+                <input type="checkbox" id="simulateFailureCheck" onchange="toggleSimulateFailure(this.checked)" style="width:auto; height:auto; accent-color:var(--rose);">
+                Simulate LLM Failure (Triggers Celery 3x Retries -> DLQ)
+              </label>
+            </div>
+            <button type="submit" class="submit-btn" id="submitBtn" style="background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              POST /api/v1/leads
+            </button>
+          </form>
+        </div>
+
+        <!-- CSV PANEL -->
+        <div id="panel-csv" style="display:none;">
+          <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">Bulk ingest structured lead files. Select a template and upload mock system CSV documents.</p>
+          
+          <div style="background:var(--bg-primary); border:1px solid var(--border); border-radius:var(--radius-sm); padding:16px; margin-bottom:24px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:13px;">
+              <span style="color:var(--text-secondary);">Template Option:</span>
+              <span style="color:var(--text-primary); font-weight:500;">B2B SaaS Prospects.csv</span>
+            </div>
+            
+            <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; padding:12px; font-family:monospace; font-size:11px; overflow-x:auto; line-height:1.6;">
+              <div style="color:var(--text-muted);">name,company,employees,budget,desc</div>
+              <div style="color:var(--green);">Priya,ApexSec,850,95000,Enterprise dynamic AI migration</div>
+              <div style="color:var(--green);">Amit,MiniShop,4,1200,Small custom shop CRM migration</div>
+              <div style="color:var(--rose);">Null,FailCo,0,-1000,Malformed database structural data</div>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Company</label>
-            <input type="text" id="fcompany" placeholder="TechFlow Solutions" required>
+          
+          <button onclick="simulateCSVUpload()" class="submit-btn" style="background:var(--green); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            Simulate CSV File Upload
+          </button>
+        </div>
+
+        <!-- WEBHOOK PANEL -->
+        <div id="panel-webhook" style="display:none;">
+          <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">Ingest real-time webhooks formatted as unstructured payloads from external environments.</p>
+          
+          <div class="form-group" style="margin-bottom:16px;">
+            <label style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Payload Source Event</label>
+            <input type="text" value="Typeform Integration (Inbound Form)" readonly style="font-family:monospace; color:var(--text-primary); background:var(--bg-secondary); margin-top:6px;">
           </div>
-          <div class="form-group">
-            <label>Message</label>
-            <textarea id="fmessage" placeholder="We need AI automation for our 1000+ daily tickets..." required></textarea>
+          
+          <div class="form-group" style="margin-bottom:24px;">
+            <label style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Raw JSON Payload</label>
+            <textarea id="webhook-payload" style="font-family:monospace; font-size:12px; min-height:180px; color:var(--text-primary); background:var(--bg-secondary); padding:12px; line-height:1.5; margin-top:6px;">{
+  "sender_name": "Sneha Reddy",
+  "organization": "Infosys",
+  "staff_size": 2000,
+  "estimated_value": 1250000,
+  "needs_summary": "Looking to migrate physical cluster assets to neural-net enabled edge models."
+}</textarea>
           </div>
-          <div class="form-group">
-            <label>Source</label>
-            <select id="fsource">
-              <option value="website_form">Website Form</option>
-              <option value="api">API</option>
-              <option value="csv">CSV Upload</option>
-              <option value="referral">Referral</option>
-            </select>
-          </div>
-          <button type="submit" class="submit-btn" id="submitBtn">Submit Lead →</button>
-        </form>
+          
+          <button onclick="submitWebhookLead()" class="submit-btn" style="background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg>
+            Send Mock Webhook HTTP POST
+          </button>
+        </div>
       </div>
-
       <!-- RIGHT: Pipeline + Results -->
       <div class="right-col">
 
-        <!-- Pipeline Visualizer -->
+        <!-- Interactive State Flow Diagram -->
         <div class="panel">
-          <div class="panel-title">
-            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            Pipeline Progress
+          <div class="panel-title" style="display:flex; justify-content:space-between;">
+            <div>
+              <div style="font-size: 14px; font-weight: 600; color: white;">Interactive State Flow Diagram</div>
+              <div style="font-size: 11px; color: var(--text-muted); font-weight: normal; margin-top: 2px;">Step-by-step
+                visual of active processing machine state</div>
+            </div>
+            <div
+              style="display: flex; align-items: center; gap: 6px; padding: 4px 10px; background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.25); border-radius: 8px; color: var(--accent); font-size: 11px; font-weight: 600; height: fit-content;">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"
+                height="14" style="animation: spin 3s linear infinite;">
+                <circle cx="12" cy="12" r="3"></circle>
+                <line x1="3" y1="12" x2="9" y2="12"></line>
+                <line x1="15" y1="12" x2="21" y2="12"></line>
+                <line x1="12" y1="3" x2="12" y2="9"></line>
+                <line x1="12" y1="15" x2="12" y2="21"></line>
+              </svg>
+              Engine Active
+            </div>
           </div>
-          <div class="pipeline" id="pipeline">
-            <div class="stage" id="s-validated">
-              <div class="stage-dot">✓</div>
-              <span class="stage-label">Validated</span>
+
+          <div class="state-grid">
+            <!-- RECEIVED -->
+            <div class="state-node" id="state-received">
+              <div class="state-node-header">
+                <span class="state-node-step">STATE 1</span>
+                <span class="state-node-dot" id="dot-received"></span>
+              </div>
+              <div class="state-node-title">RECEIVED</div>
+              <div class="state-node-desc">Intake point validation schema</div>
             </div>
-            <div class="stage-connector" id="c-1"></div>
-            <div class="stage" id="s-enriched">
-              <div class="stage-dot">⚡</div>
-              <span class="stage-label">Enriched</span>
+
+            <!-- VALIDATED -->
+            <div class="state-node" id="state-validated">
+              <div class="state-node-header">
+                <span class="state-node-step">STATE 2</span>
+                <span class="state-node-dot" id="dot-validated"></span>
+              </div>
+              <div class="state-node-title">VALIDATED</div>
+              <div class="state-node-desc">Or REJECTED if validation fails</div>
             </div>
-            <div class="stage-connector" id="c-2"></div>
-            <div class="stage" id="s-scored">
-              <div class="stage-dot">★</div>
-              <span class="stage-label">Scored</span>
+
+            <!-- ENRICHED -->
+            <div class="state-node" id="state-enriched">
+              <div class="state-node-header">
+                <span class="state-node-step">STATE 3</span>
+                <span class="state-node-dot" id="dot-enriched"></span>
+              </div>
+              <div class="state-node-title">ENRICHED</div>
+              <div class="state-node-desc">AI Enrichment / retry cycle</div>
             </div>
-            <div class="stage-connector" id="c-3"></div>
-            <div class="stage" id="s-routed">
-              <div class="stage-dot">→</div>
-              <span class="stage-label">Routed</span>
+
+            <!-- SCORED -->
+            <div class="state-node" id="state-scored">
+              <div class="state-node-header">
+                <span class="state-node-step">STATE 4</span>
+                <span class="state-node-dot" id="dot-scored"></span>
+              </div>
+              <div class="state-node-title">SCORED</div>
+              <div class="state-node-desc">Deterministic algorithms</div>
             </div>
-            <div class="stage-connector" id="c-4"></div>
-            <div class="stage" id="s-complete">
-              <div class="stage-dot">●</div>
-              <span class="stage-label">Complete</span>
+
+            <!-- ROUTED -->
+            <div class="state-node" id="state-routed">
+              <div class="state-node-header">
+                <span class="state-node-step">STATE 5</span>
+                <span class="state-node-dot" id="dot-routed"></span>
+              </div>
+              <div class="state-node-title">ROUTED</div>
+              <div class="state-node-desc">Target channel queue storage</div>
             </div>
+          </div>
+
+          <div class="pipeline-loader-bar">
+            <div class="pipeline-progress" id="pipeline-progress"></div>
           </div>
         </div>
 
         <!-- Result Display -->
         <div class="panel result-panel" id="resultPanel">
           <div class="panel-title">
-            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+            </svg>
             Pipeline Result
           </div>
-          <div class="result-grid">
+          <!-- Placeholder State -->
+          <div id="resultPlaceholder" style="text-align:center; padding:60px 20px; border:2px dashed rgba(255,255,255,0.05); border-radius:12px; margin-top:16px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="color:var(--text-muted); opacity:0.5; margin-bottom:16px;">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+            <div style="font-size:14px; font-weight:500; color:var(--text-secondary); margin-bottom:8px;">Awaiting Pipeline Execution</div>
+            <div style="font-size:12px; color:var(--text-muted); max-width:280px; margin:0 auto; line-height:1.5;">Submit a lead via the Intake Control panel on the left to see the AI enrichment and routing results appear here.</div>
+          </div>
+          
+          <div class="result-grid" id="resultGridContent" style="display:none;">
             <div class="enrichment-card">
               <h4>AI Enrichment</h4>
-              <div class="enrichment-row"><span class="enrichment-key">Category</span><span class="enrichment-val" id="rCategory">—</span></div>
-              <div class="enrichment-row"><span class="enrichment-key">Intent</span><span class="enrichment-val" id="rIntent">—</span></div>
-              <div class="enrichment-row"><span class="enrichment-key">Urgency</span><span class="enrichment-val" id="rUrgency">—</span></div>
-              <div class="enrichment-row"><span class="enrichment-key">Company Type</span><span class="enrichment-val" id="rCompanyType">—</span></div>
+              <div class="enrichment-row"><span class="enrichment-key">Category</span><span class="enrichment-val"
+                  id="rCategory">—</span></div>
+              <div class="enrichment-row"><span class="enrichment-key">Intent</span><span class="enrichment-val"
+                  id="rIntent">—</span></div>
+              <div class="enrichment-row"><span class="enrichment-key">Urgency</span><span class="enrichment-val"
+                  id="rUrgency">—</span></div>
+              <div class="enrichment-row"><span class="enrichment-key">Company Type</span><span class="enrichment-val"
+                  id="rCompanyType">—</span></div>
               <div class="pain-points" id="rPainPoints"></div>
               <div class="ai-summary" id="rSummary" style="display:none;"></div>
             </div>
@@ -1033,8 +1582,8 @@
               <div class="routing-badge" id="rRoutingBadge">—</div>
             </div>
           </div>
-          
-          <div class="execution-timeline" id="executionTimeline">
+
+          <div class="execution-timeline" id="executionTimeline" style="display:none;">
             <div class="timeline-title">Execution Timeline</div>
             <div id="timelineRows"></div>
           </div>
@@ -1050,111 +1599,115 @@
       </div>
     </div>
 
-    <!-- ===================== BOTTOM GRID ===================== -->
-    <div class="bottom-grid">
-
-      <!-- Recent Leads -->
-      <div class="panel">
-        <div class="panel-title">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-          Recent Leads
+    <!-- ===================== DB & QUEUE VISUALIZER ===================== -->
+    <div class="db-queue-grid">
+      <!-- Left: DBs -->
+      <div style="display:flex; flex-direction:column; gap:24px;">
+        <!-- Postgres -->
+        <div class="db-box">
+          <div class="db-box-header">
+            <div class="db-box-title">Postgres (COMPLETE)</div>
+            <div class="db-badge pg" id="pgRowCount">0 rows</div>
+          </div>
+          <div class="db-list" id="pgList">
+            <div
+              style="text-align:center; color:var(--text-muted); font-size:10px; margin-top:20px; font-style:italic;">No
+              records written yet.</div>
+          </div>
         </div>
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Company</th>
-                <th>Email</th>
-                <th>Status</th>
-                <th>Time</th>
-              </tr>
-            </thead>
-            <tbody id="leadsTableBody">
-              <tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No leads yet</td></tr>
-            </tbody>
-          </table>
+
+        <!-- ChromaDB -->
+        <div class="db-box">
+          <div class="db-box-header">
+            <div class="db-box-title">ChromaDB Vector DB</div>
+            <div class="db-badge vec" id="vecRowCount">0 index</div>
+          </div>
+          <div class="db-list" id="vecList">
+            <div
+              style="text-align:center; color:var(--text-muted); font-size:10px; margin-top:20px; font-style:italic;">No
+              embeddings created.</div>
+          </div>
         </div>
       </div>
 
-      <!-- Live Events -->
-      <div class="panel">
-        <div class="panel-title">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-          Live Events
+      <!-- Right: Queues & Terminal -->
+      <div style="display:flex; flex-direction:column; gap:24px;">
+        <div class="panel">
+          <div class="panel-title" style="margin-bottom: 16px;">Routed Output State Queues</div>
+          <div class="queue-tabs">
+            <div class="q-tab active sales" onclick="switchQueue('sales')" id="tab-sales">
+              <span class="q-tab-label">Sales</span>
+              <span class="q-tab-count" id="count-sales">0</span>
+            </div>
+            <div class="q-tab nurture" onclick="switchQueue('nurture')" id="tab-nurture">
+              <span class="q-tab-label">Nurture</span>
+              <span class="q-tab-count" id="count-nurture">0</span>
+            </div>
+            <div class="q-tab archive" onclick="switchQueue('archive')" id="tab-archive">
+              <span class="q-tab-label">Archive</span>
+              <span class="q-tab-count" id="count-archive">0</span>
+            </div>
+            <div class="q-tab dlq" onclick="switchQueue('dlq')" id="tab-dlq">
+              <span class="q-tab-label">Dead-Letter</span>
+              <span class="q-tab-count" id="count-dlq">0</span>
+            </div>
+            <div class="q-tab notifs" onclick="switchQueue('notifs')" id="tab-notifs">
+              <span class="q-tab-label">Notifs</span>
+              <span class="q-tab-count" id="count-notifs">0</span>
+            </div>
+          </div>
+          <div class="queue-content" id="queueContent">
+            <div style="text-align:center; color:var(--text-muted); font-size:12px; margin-top:40px;">This queue is
+              empty. Submit and route leads.</div>
+          </div>
         </div>
-        <div class="events-feed" id="eventsFeed">
-          <div class="no-events">Waiting for pipeline events...</div>
+
+        <!-- Terminal Output -->
+        <div>
+          <div
+            style="font-size:10px; font-weight:600; text-transform:uppercase; color:var(--text-muted); margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            STATE MACHINE TRANSITION LOGS
+            <div
+              style="width:6px; height:6px; border-radius:50%; background:var(--green); animation:ping 1.5s infinite;">
+            </div>
+          </div>
+          <div class="terminal-box" id="terminalBox">
+            <div class="t-log"><span class="t-time">SYS</span> <span class="t-info">[STATE-ENGINE] Initialization
+                complete. Ready to receive leads.</span></div>
+            <div class="t-log"><span class="t-time">SYS</span> <span class="t-info">[STATE-ENGINE] Idle queue: Awaiting
+                RECEIVED transitions.</span></div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- ===================== INFRA & STATS GRID ===================== -->
-    <div class="stats-grid">
-      <!-- Infrastructure Status -->
-      <div class="panel">
-        <div class="panel-title">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-          Infrastructure
+    <!-- ===================== WEBHOOK MODAL ===================== -->
+    <div id="webhookModal"
+      style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
+      <div
+        style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:24px; max-width:600px; width:90%;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h3 style="margin:0; font-size:18px;">Webhook Integration</h3>
+          <button onclick="closeWebhookModal()"
+            style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:20px;">&times;</button>
         </div>
-        <div class="infra-grid">
-          <div class="infra-box">
-            <div class="infra-label">Postgres</div>
-            <div class="infra-val" id="infraDb">—</div>
-            <div class="infra-status" id="infraDbStatus">⏳</div>
-          </div>
-          <div class="infra-box">
-            <div class="infra-label">Redis</div>
-            <div class="infra-val" id="infraRedis">—</div>
-            <div class="infra-status" id="infraRedisStatus">⏳</div>
-          </div>
-          <div class="infra-box">
-            <div class="infra-label">Workers</div>
-            <div class="infra-val" id="infraWorker">—</div>
-            <div class="infra-status" id="infraWorkerStatus">⏳</div>
-          </div>
-          <div class="infra-box">
-            <div class="infra-label">Queue</div>
-            <div class="infra-val" id="infraQueue">—</div>
-            <div class="infra-status" id="infraQueueStatus">⏳</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Routing Distribution -->
-      <div class="panel">
-        <div class="panel-title">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-          Routing Distribution
-        </div>
-        <div class="routing-stats">
-          <div class="route-bar-wrap">
-            <div class="route-label">SALES_QUEUE <span id="routeSalesCount" style="float:right">0</span></div>
-            <div class="route-bar-bg"><div class="route-bar-fill sales" id="routeSalesBar" style="width: 0%"></div></div>
-          </div>
-          <div class="route-bar-wrap">
-            <div class="route-label">NURTURE_QUEUE <span id="routeNurtureCount" style="float:right">0</span></div>
-            <div class="route-bar-bg"><div class="route-bar-fill nurture" id="routeNurtureBar" style="width: 0%"></div></div>
-          </div>
-          <div class="route-bar-wrap">
-            <div class="route-label">ARCHIVE <span id="routeArchiveCount" style="float:right">0</span></div>
-            <div class="route-bar-bg"><div class="route-bar-fill archive" id="routeArchiveBar" style="width: 0%"></div></div>
-          </div>
-          <div class="route-total" id="routeTotal">Total Routed: 0</div>
-        </div>
-      </div>
-
-      <!-- ChromaDB -->
-      <div class="panel">
-        <div class="panel-title">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
-          Vector Store (ChromaDB)
-        </div>
-        <div class="chroma-info">
-          <div class="chroma-row"><span class="chroma-key">Collection</span><span class="chroma-val" id="chromaCollection">—</span></div>
-          <div class="chroma-row"><span class="chroma-key">Embeddings</span><span class="chroma-val" id="chromaCount">—</span></div>
-          <div class="chroma-row"><span class="chroma-key">Semantic Dedup</span><span class="chroma-val" id="chromaStatus">—</span></div>
-          <div class="chroma-row"><span class="chroma-key">Model</span><span class="chroma-val" id="chromaModel">—</span></div>
+        <p style="color:var(--text-secondary); font-size:14px; margin-bottom:16px;">
+          You can test the system-to-system webhook ingestion by running this cURL command in your terminal. It returns
+          a 202 Accepted immediately and processes asynchronously.
+        </p>
+        <div style="background:#0f172a; padding:16px; border-radius:8px; position:relative;">
+          <pre
+            style="margin:0; color:#e2e8f0; font-size:12px; font-family:monospace; white-space:pre-wrap; word-break:break-all;">curl -X POST http://localhost:8000/api/v1/webhooks/lead \
+  -H "Content-Type: application/json" \
+  -d '{
+    "payload": {
+      "name": "Priya Patel",
+      "email": "priya.patel@example.in",
+      "company": "Acme Corp",
+      "inquiry": "We need help scaling our backend."
+    },
+    "source": "zapier"
+  }'</pre>
         </div>
       </div>
     </div>
@@ -1165,7 +1718,8 @@
     // ========================================
     // STATE
     // ========================================
-    const API = window.location.origin + '/api/v1';
+    const baseOrigin = window.location.origin === 'null' || window.location.protocol === 'file:' ? 'http://localhost:8000' : window.location.origin;
+    const API = baseOrigin + '/api/v1';
     let currentLeadId = null;
     let pollTimer = null;
     let eventSource = null;
@@ -1174,8 +1728,8 @@
     // PREFILL EXAMPLES
     // ========================================
     function prefillGood() {
-      document.getElementById('fname').value = 'Sarah Chen';
-      document.getElementById('femail').value = 'sarah' + Date.now() + '@techflow.io';
+      document.getElementById('fname').value = 'Rahul Sharma';
+      document.getElementById('femail').value = 'rahul' + Date.now() + '@techflow.in';
       document.getElementById('fcompany').value = 'TechFlow Solutions';
       document.getElementById('fmessage').value = 'We are a mid-size SaaS company processing 1000+ customer tickets daily. Looking for AI automation to reduce response times and agent workload. Budget approved for Q3. Need something production-ready within 60 days.';
       document.getElementById('fsource').value = 'website_form';
@@ -1190,11 +1744,171 @@
     }
 
     function prefillLow() {
-      document.getElementById('fname').value = 'Alex Rivera';
-      document.getElementById('femail').value = 'alex' + Date.now() + '@university.edu';
+      document.getElementById('fname').value = 'Aditi Desai';
+      document.getElementById('femail').value = 'aditi' + Date.now() + '@university.ac.in';
       document.getElementById('fcompany').value = 'State University Research Lab';
       document.getElementById('fmessage').value = 'I am a graduate student researching AI applications in lead scoring. Could you share some information about how your system works?';
       document.getElementById('fsource').value = 'website_form';
+    }
+
+    // ========================================
+    // TABS & MODALS
+    // ========================================
+    function switchTab(tab) {
+      document.querySelectorAll('.form-tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.style.background = 'transparent';
+        b.style.color = 'var(--text-muted)';
+      });
+      document.querySelectorAll('#panel-api, #panel-csv, #panel-webhook').forEach(el => el.style.display = 'none');
+      
+      const activePanel = document.getElementById('panel-' + tab);
+      if (activePanel) activePanel.style.display = 'block';
+      
+      const activeBtn = document.getElementById('tab-' + tab);
+      if (activeBtn) {
+        activeBtn.classList.add('active');
+        activeBtn.style.background = 'rgba(99, 102, 241, 0.1)';
+        activeBtn.style.color = 'var(--accent)';
+      }
+    }
+
+    async function submitWebhookLead() {
+      const payloadText = document.getElementById('webhook-payload').value;
+      let payload;
+      try {
+        payload = JSON.parse(payloadText);
+      } catch (e) {
+        alert("Invalid JSON payload");
+        return;
+      }
+      try {
+        const res = await fetch(API + '/webhooks/lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          alert("Webhook payload sent successfully!");
+        } else {
+          alert("Error submitting webhook");
+        }
+      } catch (e) {
+        alert("Network error");
+      }
+    }
+
+    async function simulateCSVUpload() {
+      const csvData = `name,company,employees,budget,desc\nPriya,ApexSec,850,95000,Enterprise dynamic AI migration\nAmit,MiniShop,4,1200,Small custom shop CRM migration\nNull,FailCo,0,-1000,Malformed database structural data`;
+      
+      const blob = new Blob([csvData], { type: 'text/csv' });
+      const formData = new FormData();
+      formData.append('file', blob, 'B2B SaaS Prospects.csv');
+
+      try {
+        const res = await fetch(API + '/leads/batch', {
+          method: 'POST',
+          body: formData
+        });
+        if (res.ok) {
+          alert("CSV processing started! Check the pipeline.");
+        } else {
+          alert("Error uploading CSV");
+        }
+      } catch (e) {
+        alert("Network error");
+      }
+    }
+
+    function showWebhookModal() {
+      document.getElementById('webhookModal').style.display = 'flex';
+    }
+
+    function closeWebhookModal() {
+      document.getElementById('webhookModal').style.display = 'none';
+    }
+
+    // ========================================
+    // CSV BATCH UPLOAD
+    // ========================================
+    let selectedFile = null;
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      selectedFile = file;
+      document.getElementById('uploadFileName').textContent = file.name;
+      document.getElementById('uploadArea').style.borderColor = 'var(--green)';
+      document.getElementById('batchSubmitBtn').disabled = false;
+    }
+
+    async function submitBatchCSV() {
+      if (!selectedFile) return;
+
+      const btn = document.getElementById('batchSubmitBtn');
+      const resultDiv = document.getElementById('batchResult');
+
+      btn.disabled = true;
+      btn.textContent = 'Uploading...';
+      resultDiv.style.display = 'none';
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      try {
+        const res = await fetch(API + '/leads/batch', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await res.json();
+
+        resultDiv.style.display = 'block';
+        if (res.ok) {
+          resultDiv.style.backgroundColor = 'rgba(16, 185, 129, 0.1)';
+          resultDiv.style.color = 'var(--green)';
+          resultDiv.innerHTML = `<strong>Success!</strong> ${data.queued} leads queued for processing. ${data.rejected.length} rejected.`;
+
+          // Clear file
+          selectedFile = null;
+          document.getElementById('csvFileInput').value = '';
+          document.getElementById('uploadFileName').textContent = 'Columns: name, email, company, message, source';
+          document.getElementById('uploadArea').style.borderColor = 'var(--border)';
+
+          // Refresh dashboard stats and table after a short delay
+          setTimeout(() => {
+            refreshAnalytics();
+            refreshLeads();
+          }, 1500);
+
+        } else {
+          resultDiv.style.backgroundColor = 'rgba(244, 63, 94, 0.1)';
+          resultDiv.style.color = 'var(--rose)';
+          resultDiv.innerHTML = `<strong>Error:</strong> ${data.detail || 'Failed to upload CSV'}`;
+          btn.disabled = false;
+        }
+      } catch (err) {
+        resultDiv.style.display = 'block';
+        resultDiv.style.backgroundColor = 'rgba(244, 63, 94, 0.1)';
+        resultDiv.style.color = 'var(--rose)';
+        resultDiv.innerHTML = `<strong>Error:</strong> ${err.message}`;
+        btn.disabled = false;
+      }
+
+      btn.textContent = 'Upload & Process Batch';
+    }
+
+    function downloadSampleCSV() {
+      const csvContent = "name,email,company,message,source\nVikram Singh,vikram@example.in,Example Corp,Looking for AI solutions to automate our customer service workflow. We currently have 50 agents.,csv_upload\nNeha Gupta,neha@spammy-offers.net,Marketing LLC,Buy cheap followers here! Best prices!,csv_upload\nKaran Verma,karan@techstartup.io,TechStartup,We need a custom LLM deployed on our private infrastructure.,csv_upload";
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "sample_leads.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
 
     // ========================================
@@ -1216,7 +1930,7 @@
         email: document.getElementById('femail').value,
         company: document.getElementById('fcompany').value,
         message: document.getElementById('fmessage').value,
-        source: document.getElementById('fsource').value,
+        source: document.getElementById('fsource').value
       };
 
       try {
@@ -1229,29 +1943,28 @@
         if (!res.ok) {
           const err = await res.json();
           showError(
-            res.status === 422 ? 'Lead Rejected' : 'Error',
-            err.detail?.reason || err.detail || JSON.stringify(err)
+            err.detail?.[0]?.msg || 'Validation Error',
+            JSON.stringify(err.detail)
           );
-          btn.disabled = false;
-          btn.textContent = 'Submit Lead →';
-          refreshAnalytics();
-          refreshLeads();
-          return;
+          setStage('s-validated', 'failed');
+          addTerminalLog('ERR', `Submission failed: ${JSON.stringify(err.detail)}`);
+        } else {
+          const data = await res.json();
+          currentLeadId = data.lead_id;
+
+          setStage('state-received', 'active');
+          addTerminalLog('APP', 'Received new lead via web form.');
+
+          // If it was rejected outright by synchronous validation
+          if (data.status === 'REJECTED') {
+            showError('Rejected', data.failure_reason);
+            setStage('s-validated', 'failed');
+            addTerminalLog('ERR', `Lead ${data.id.slice(0, 8)} rejected synchronously.`);
+          }
         }
-
-        const data = await res.json();
-        currentLeadId = data.lead_id;
-
-        // Mark validated immediately (sync validation passed)
-        setStage('s-validated', 'done');
-        setConnector('c-1', 'done');
-        addEvent('validation', 'PASSED', 'success');
-
-        // Poll for result
-        startPolling(currentLeadId);
-
       } catch (err) {
         showError('Network Error', err.message);
+        addTerminalLog('ERR', `Network Error: ${err.message}`);
       }
 
       btn.disabled = false;
@@ -1347,24 +2060,37 @@
     // PIPELINE UI HELPERS
     // ========================================
     function resetPipeline() {
-      ['s-validated','s-enriched','s-scored','s-routed','s-complete'].forEach(id => {
+      ['state-received', 'state-validated', 'state-enriched', 'state-scored', 'state-routed'].forEach(id => {
         const el = document.getElementById(id);
-        el.className = 'stage';
+        if (el) el.className = 'state-node';
       });
-      ['c-1','c-2','c-3','c-4'].forEach(id => {
-        const el = document.getElementById(id);
-        el.className = 'stage-connector';
-      });
+      document.getElementById('pipeline-progress').style.width = '0%';
     }
 
     function setStage(id, state) {
-      const el = document.getElementById(id);
-      el.className = 'stage ' + state;
+      let nodeId = id;
+      if (id === 's-validated') nodeId = 'state-validated';
+      if (id === 's-enriched') nodeId = 'state-enriched';
+      if (id === 's-scored') nodeId = 'state-scored';
+      if (id === 's-routed') nodeId = 'state-routed';
+      if (id === 's-complete') nodeId = 'state-routed'; // complete uses routed node
+
+      const mappedState = state === 'done' ? 'passed' : state;
+      const el = document.getElementById(nodeId);
+      if (el) el.className = 'state-node ' + mappedState;
+
+      let width = '0%';
+      if (id === 'state-received') width = '10%';
+      if (id === 's-validated') width = '30%';
+      if (id === 's-enriched') width = '50%';
+      if (id === 's-scored') width = '70%';
+      if (id === 's-routed') width = '90%';
+      if (id === 's-complete') width = '100%';
+      document.getElementById('pipeline-progress').style.width = width;
     }
 
     function setConnector(id, state) {
-      const el = document.getElementById(id);
-      el.className = 'stage-connector ' + state;
+      // No longer used in new visualizer
     }
 
     // ========================================
@@ -1373,6 +2099,9 @@
     function showResult(lead) {
       const panel = document.getElementById('resultPanel');
       panel.classList.add('visible');
+      document.getElementById('resultPlaceholder').style.display = 'none';
+      document.getElementById('resultGridContent').style.display = 'grid';
+      document.getElementById('executionTimeline').style.display = 'block';
 
       const e = lead.enrichment;
       const s = lead.score;
@@ -1411,7 +2140,7 @@
         badge.textContent = r.queue.replace('_', ' ');
         badge.className = 'routing-badge ' + (r.queue === 'SALES_QUEUE' ? 'sales' : r.queue === 'NURTURE_QUEUE' ? 'nurture' : 'archive');
       }
-      
+
       fetchAndShowTimeline(lead.id);
     }
 
@@ -1426,11 +2155,14 @@
           refreshAnalytics();
           refreshLeads();
         }
-      } catch(e) {}
+      } catch (e) { }
     }
 
     function hideResult() {
-      document.getElementById('resultPanel').classList.remove('visible');
+      // document.getElementById('resultPanel').classList.remove('visible');
+      document.getElementById('resultPlaceholder').style.display = 'block';
+      document.getElementById('resultGridContent').style.display = 'none';
+      document.getElementById('executionTimeline').style.display = 'none';
     }
 
     function showError(title, msg) {
@@ -1445,24 +2177,93 @@
     }
 
     // ========================================
-    // EVENTS FEED
+    // QUEUES & LOGS
     // ========================================
-    let eventCount = 0;
 
-    function addEvent(stage, msg, type = '') {
-      const feed = document.getElementById('eventsFeed');
-      if (eventCount === 0) feed.innerHTML = '';
-      eventCount++;
+    async function toggleSimulateFailure(checked) {
+      try {
+        await fetch(API + '/config/simulate-failures', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ simulate_failures: checked })
+        });
+        addTerminalLog('USER', `Failure simulation toggled: ${checked}`);
+      } catch (e) {
+        addTerminalLog('SYS', `Error toggling simulation: ${e}`);
+      }
+    }
 
-      const now = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const line = document.createElement('div');
-      line.className = 'event-line';
-      line.innerHTML = `
-        <span class="event-time">${now}</span>
-        <span class="event-stage">${stage}</span>
-        <span class="event-msg ${type}">${msg}</span>
-      `;
-      feed.prepend(line);
+    let activeQueue = 'sales';
+
+    async function switchQueue(queueName) {
+      activeQueue = queueName;
+      ['sales', 'nurture', 'archive', 'dlq', 'notifs'].forEach(q => {
+        document.getElementById('tab-' + q).classList.remove('active');
+      });
+      document.getElementById('tab-' + queueName).classList.add('active');
+
+      const content = document.getElementById('queueContent');
+      content.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:12px; margin-top:40px;">Loading...</div>';
+
+      try {
+        let leads = [];
+        if (queueName === 'dlq') {
+          const res = await fetch(API + '/admin/failures?limit=50');
+          const d = await res.json();
+          leads = d.failures || [];
+        } else if (queueName !== 'notifs') {
+          const queueMap = { 'sales': 'SALES_QUEUE', 'nurture': 'NURTURE_QUEUE', 'archive': 'ARCHIVE' };
+          const res = await fetch(API + '/admin/queue/' + queueMap[queueName]);
+          leads = await res.json() || [];
+        }
+
+        if (leads.length === 0) {
+          content.innerHTML = '<div style="text-align:center; color:var(--text-muted); font-size:12px; margin-top:40px;">This queue is empty. Submit and route leads.</div>';
+          return;
+        }
+
+        content.innerHTML = leads.map(l => {
+          if (queueName === 'dlq') {
+            return `
+              <div class="queue-card">
+                <div class="queue-card-header">
+                  <div>
+                    <div class="qc-name">${l.email}</div>
+                  </div>
+                  <span class="qc-score" style="color:var(--rose)">FAILED</span>
+                </div>
+                <div class="qc-dlq">${l.failure_reason || l.flag_reason || 'Unknown failure'}</div>
+              </div>
+            `;
+          }
+          return `
+            <div class="queue-card">
+              <div class="queue-card-header">
+                <div>
+                  <div class="qc-name">${l.name}</div>
+                  <div class="qc-company">${l.company}</div>
+                </div>
+                <span class="qc-score" style="color:var(--green)">Score: ${l.score}</span>
+              </div>
+              <div class="qc-info">
+                <span>Category: ${l.category || 'N/A'}</span>
+              </div>
+              ${l.summary ? `<div class="qc-summary">${l.summary}</div>` : ''}
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        content.innerHTML = '<div style="text-align:center; color:var(--rose); font-size:12px; margin-top:40px;">Error loading queue.</div>';
+      }
+    }
+
+    function addTerminalLog(source, msg) {
+      const tb = document.getElementById('terminalBox');
+      if (!tb) return;
+      const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const cls = source === 'ERR' ? 't-error' : source === 'SYS' ? 't-info' : 't-success';
+      tb.innerHTML += `<div class="t-log"><span class="t-time">${time}</span><span class="t-time" style="width:30px;display:inline-block">${source}</span> <span class="${cls}">${msg}</span></div>`;
+      tb.scrollTop = tb.scrollHeight;
     }
 
     // SSE connection for live events
@@ -1473,22 +2274,23 @@
       eventSource.addEventListener('pipeline_event', (e) => {
         try {
           const data = JSON.parse(e.data);
-          const type = data.status === 'SUCCESS' ? 'success' : data.status === 'FAILED' ? 'error' : '';
-          addEvent(data.stage, `[${data.lead_id?.slice(0,8)}] ${data.status}`, type);
+          const type = data.status === 'SUCCESS' ? 'SYS' : data.status === 'FAILED' ? 'ERR' : 'APP';
+          addTerminalLog(type, `[${data.lead_id?.slice(0, 8)}] ${data.stage} -> ${data.status}`);
 
           // If this event is for our current lead, update pipeline
           if (currentLeadId && data.lead_id === currentLeadId) {
             const stageMap = {
-              'enrichment': { stage: 's-enriched', connector: 'c-2' },
-              'scoring': { stage: 's-scored', connector: 'c-3' },
-              'routing': { stage: 's-routed', connector: 'c-4' },
+              'enrichment': 's-enriched',
+              'scoring': 's-scored',
+              'routing': 's-routed',
             };
             const m = stageMap[data.stage];
             if (m && data.status === 'SUCCESS') {
-              setStage(m.stage, 'done');
-              setConnector(m.connector, 'done');
+              setStage(m, 'done');
             } else if (m && data.status === 'STARTED') {
-              setStage(m.stage, 'active');
+              setStage(m, 'active');
+            } else if (data.status === 'FAILED') {
+              if (m) setStage(m, 'failed');
             }
 
             // If pipeline completed via SSE, fetch full result
@@ -1497,7 +2299,7 @@
               fetchAndShowResult(currentLeadId);
             }
           }
-        } catch(err) {}
+        } catch (err) { }
       });
 
       eventSource.onerror = () => {
@@ -1517,33 +2319,39 @@
         document.getElementById('qualifiedLeads').textContent = d.qualified || 0;
         document.getElementById('nurtureLeads').textContent = d.nurture_queue || 0;
         document.getElementById('rejectedLeads').textContent = d.rejected || 0;
-      } catch(e) {}
+
+        document.getElementById('pgRowCount').textContent = (d.total_leads || 0) + ' rows';
+
+        document.getElementById('count-sales').textContent = d.sales_queue || 0;
+        document.getElementById('count-nurture').textContent = d.nurture_queue || 0;
+        document.getElementById('count-archive').textContent = d.archived || 0;
+      } catch (e) { }
+
+      try {
+        const res2 = await fetch(API + '/admin/failures?limit=1');
+        const d2 = await res2.json();
+        document.getElementById('count-dlq').textContent = d2.total || 0;
+      } catch (e) { }
     }
 
-    async function refreshLeads() {
+    async function updateDBLists() {
       try {
         const res = await fetch(API + '/leads?limit=10');
-        if (!res.ok) return;
         const d = await res.json();
-        const tbody = document.getElementById('leadsTableBody');
-
-        if (!d.leads || d.leads.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No leads yet</td></tr>';
-          return;
+        const pg = document.getElementById('pgList');
+        if (d.leads && d.leads.length > 0) {
+          pg.innerHTML = d.leads.map(l => `
+            <div class="db-item"><span style="font-weight:600;color:var(--text-primary);">${l.id.slice(0, 8)}</span> | ${l.name} - ${l.status}</div>
+          `).join('');
         }
 
-        tbody.innerHTML = d.leads.map(l => {
-          const statusClass = l.status.toLowerCase();
-          const time = new Date(l.created_at).toLocaleTimeString('en-US', { hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
-          return `<tr>
-            <td style="color:var(--text-primary);font-weight:500;">${l.name}</td>
-            <td>${l.company}</td>
-            <td>${l.email}</td>
-            <td><span class="status-pill ${statusClass}">${l.status}</span></td>
-            <td>${time}</td>
-          </tr>`;
-        }).join('');
-      } catch(e) {}
+        const vec = document.getElementById('vecList');
+        if (d.leads && d.leads.length > 0) {
+          vec.innerHTML = d.leads.slice(0, 5).map(l => `
+            <div class="db-item"><span style="font-weight:600;color:var(--text-primary);">${l.id.slice(0, 8)}</span> | Embeddings synced</div>
+          `).join('');
+        }
+      } catch (e) { }
     }
 
     async function fetchAndShowTimeline(leadId) {
@@ -1551,18 +2359,18 @@
         const res = await fetch(API + '/admin/logs/' + leadId);
         if (!res.ok) return;
         const logs = await res.json();
-        
+
         const tlEl = document.getElementById('executionTimeline');
         const rowsEl = document.getElementById('timelineRows');
-        
+
         if (!logs || logs.length === 0) {
           tlEl.style.display = 'none';
           return;
         }
-        
+
         rowsEl.innerHTML = logs.map(l => {
           const statusClass = l.status === 'SUCCESS' ? 'success' : l.status === 'FAILED' ? 'failed' : '';
-          const time = new Date(l.created_at).toLocaleTimeString('en-US', { hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
+          const time = new Date(l.created_at).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
           return `
             <div class="timeline-row">
               <span class="timeline-stage">${l.stage}</span>
@@ -1572,32 +2380,32 @@
             </div>
           `;
         }).join('');
-        
+
         tlEl.style.display = 'block';
-      } catch (e) {}
+      } catch (e) { }
     }
-    
+
     async function refreshRouting() {
       try {
         const res = await fetch(API + '/admin/stats/routing');
         if (!res.ok) return;
         const d = await res.json();
-        
+
         const total = (d.sales_queue || 0) + (d.nurture_queue || 0) + (d.archive || 0);
         document.getElementById('routeTotal').textContent = 'Total Routed: ' + total;
-        
+
         if (total === 0) return;
-        
+
         const updateBar = (id, count, total) => {
           const pct = Math.round((count / total) * 100);
           document.getElementById('route' + id + 'Count').textContent = `${pct}% (${count})`;
           document.getElementById('route' + id + 'Bar').style.width = pct + '%';
         };
-        
+
         updateBar('Sales', d.sales_queue || 0, total);
         updateBar('Nurture', d.nurture_queue || 0, total);
         updateBar('Archive', d.archive || 0, total);
-      } catch(e) {}
+      } catch (e) { }
     }
 
     async function refreshChroma() {
@@ -1605,12 +2413,14 @@
         const res = await fetch(API + '/admin/vector-store');
         if (!res.ok) return;
         const d = await res.json();
-        
+
         document.getElementById('chromaCollection').textContent = d.collection;
         document.getElementById('chromaCount').textContent = d.embeddings_count;
         document.getElementById('chromaStatus').textContent = d.semantic_dedup_enabled ? 'Enabled (' + d.similarity_threshold + ')' : 'Disabled';
         document.getElementById('chromaModel').textContent = d.embedding_model;
-      } catch(e) {}
+
+        document.getElementById('vecRowCount').textContent = d.embeddings_count + ' index';
+      } catch (e) { }
     }
 
     // ========================================
@@ -1618,7 +2428,7 @@
     // ========================================
     async function checkHealth() {
       try {
-        const res = await fetch(window.location.origin + '/health');
+        const res = await fetch(baseOrigin + '/health');
         if (!res.ok) throw new Error('unhealthy');
         const d = await res.json();
 
@@ -1632,22 +2442,22 @@
           badge.className = 'status-badge degraded';
           text.textContent = 'Degraded';
         }
-        
+
         // Update infra cards
         if (d.checks) {
           document.getElementById('infraDb').textContent = d.checks.database?.latency_ms ? d.checks.database.latency_ms + 'ms' : 'Error';
           document.getElementById('infraDbStatus').textContent = d.checks.database?.status === 'ok' ? '✅' : '❌';
-          
+
           document.getElementById('infraRedis').textContent = d.checks.redis?.latency_ms ? d.checks.redis.latency_ms + 'ms' : 'Error';
           document.getElementById('infraRedisStatus').textContent = d.checks.redis?.status === 'ok' ? '✅' : '❌';
-          
+
           document.getElementById('infraWorker').textContent = d.checks.celery_worker?.workers_online + ' online';
           document.getElementById('infraWorkerStatus').textContent = d.checks.celery_worker?.status === 'ok' ? '✅' : '⚠️';
-          
+
           document.getElementById('infraQueue').textContent = d.checks.queue_depth?.total_pending + ' pend.';
           document.getElementById('infraQueueStatus').textContent = (d.checks.queue_depth?.total_pending >= 0) ? '✅' : '❌';
         }
-      } catch(e) {
+      } catch (e) {
         const badge = document.getElementById('statusBadge');
         const text = document.getElementById('statusText');
         badge.className = 'status-badge offline';
@@ -1660,19 +2470,21 @@
     // ========================================
     checkHealth();
     refreshAnalytics();
-    refreshLeads();
+    updateDBLists();
+    switchQueue('sales');
     refreshRouting();
     refreshChroma();
     connectSSE();
 
-    // Auto-refresh every 10s
     setInterval(() => {
       checkHealth();
       refreshAnalytics();
-      refreshLeads();
+      updateDBLists();
+      if (activeQueue) switchQueue(activeQueue);
       refreshRouting();
       refreshChroma();
     }, 10000);
   </script>
 </body>
+
 </html>
