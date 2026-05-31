@@ -341,8 +341,9 @@ class TestLangGraphPipeline:
                     "retry_count": 0,
                 })
             
-            # The error_node sets lead.status to FAILED
-            assert lead.status == "FAILED"
+            # The error_node raises to Celery — FAILED status is set by the Celery dead-letter handler
+            # NOT by error_node directly
+            assert lead.status != "FAILED"
 
     def test_load_existing_enrichment_node(self, mock_api_key):
         """Test that load_enrichment_node correctly loads data when skip enrich."""

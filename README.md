@@ -257,6 +257,7 @@ pytest tests/test_integration.py -v
 - Add Prometheus metrics endpoint for observability
 - Make scoring weights configurable via admin API for experimentation
 - Add rate limiting per API key rather than global limits
+- Clean up unused legacy routing functions (`should_score_or_skip`, `should_route_or_end`) left over from the pre-LangGraph monolithic pipeline
 
 ---
 *Developed for the Geta.ai Backend Engineering assignment.*

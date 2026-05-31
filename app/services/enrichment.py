@@ -200,27 +200,3 @@ def run_categorization_agent(
         _update_execution_log(session, exec_log, "FAILED", duration_ms, str(e))
         raise
 
-
-def handle_fallback_enrichment(session: Session, lead: Lead, error_message: str) -> EnrichmentResult:
-    """Triggered by the error_node when all retries are exhausted."""
-    fallback = get_fallback_enrichment()
-    
-    enrichment = Enrichment(
-        lead_id=lead.id,
-        lead_category=fallback.lead_category,
-        company_type=fallback.company_type,
-        estimated_intent=fallback.estimated_intent,
-        urgency_level=fallback.urgency_level,
-        pain_points=fallback.pain_points,
-        ai_summary=fallback.ai_summary,
-        raw_llm_response=f"FALLBACK_MOCK: {error_message}",
-    )
-    session.add(enrichment)
-    
-    lead.flag_for_review = True
-    lead.flag_reason = f"Agent failure: {error_message}"
-    lead.status = "ENRICHED"  # Continue pipeline with fallback
-    lead.updated_at = datetime.now(timezone.utc)
-    
-    session.flush()
-    return fallback
