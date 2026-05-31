@@ -6,15 +6,14 @@ An AI powered lead pipeline with semantic spam detection (ChromaDB), LangGraph s
 
 ## System Architecture
 
-The pipeline separates **synchronous validation** (rejections under 10ms) from **asynchronous processing** (LLM enrichment via Celery workers).
-
-![Pipeline Architecture](docs/pipeline_architecture.png)
 
 
 ### Pipeline State Machine
 
 Every lead transitions through a tracked state machine:
+The pipeline separates **synchronous validation** (rejections under 10ms) from **asynchronous processing** (LLM enrichment via Celery workers).
 
+![Pipeline Architecture](docs/pipeline_architecture.png)
 ```mermaid
 stateDiagram-v2
     [*] --> RECEIVED
