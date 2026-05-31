@@ -485,7 +485,8 @@
        RESULT DISPLAY
        ======================================== */
     .result-panel {
-      display: block; /* now visible by default for the placeholder */
+      display: block;
+      /* now visible by default for the placeholder */
       min-height: 200px;
     }
 
@@ -1350,46 +1351,65 @@
       <div class="panel">
         <div class="panel-title" style="display:flex; align-items:center; justify-content:space-between;">
           <div style="display:flex; align-items:center;">
-            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 12px;">
-              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/>
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              style="margin-right: 12px;">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3" />
             </svg>
             Intake Layer Control
           </div>
         </div>
 
-        <div class="form-tabs" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 4px; border:none; background:var(--bg-primary); padding:4px; border-radius:var(--radius-sm); border:1px solid var(--border); margin-bottom: 24px;">
-          <button class="form-tab-btn active" id="tab-api" onclick="switchTab('api')" style="width:100%; border-radius:6px; background:rgba(99, 102, 241, 0.1); color:var(--accent);">REST API</button>
-          <button class="form-tab-btn" id="tab-csv" onclick="switchTab('csv')" style="width:100%; border-radius:6px;">CSV Upload</button>
-          <button class="form-tab-btn" id="tab-webhook" onclick="switchTab('webhook')" style="width:100%; border-radius:6px;">Webhook</button>
+        <div class="form-tabs"
+          style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 4px; border:none; background:var(--bg-primary); padding:4px; border-radius:var(--radius-sm); border:1px solid var(--border); margin-bottom: 24px;">
+          <button class="form-tab-btn active" id="tab-api" onclick="switchTab('api')"
+            style="width:100%; border-radius:6px; background:rgba(99, 102, 241, 0.1); color:var(--accent);">REST
+            API</button>
+          <button class="form-tab-btn" id="tab-csv" onclick="switchTab('csv')"
+            style="width:100%; border-radius:6px;">CSV Upload</button>
+          <button class="form-tab-btn" id="tab-webhook" onclick="switchTab('webhook')"
+            style="width:100%; border-radius:6px;">Webhook</button>
         </div>
 
         <!-- API PANEL -->
         <div id="panel-api" style="display:block;">
           <div class="prefill-row" style="display:flex; gap:8px; margin-bottom:16px;">
-            <button type="button" class="prefill-btn" onclick="prefillGood()" style="flex:1; padding:6px 12px; background:rgba(16,185,129,0.1); color:var(--green); border:1px solid rgba(16,185,129,0.2); border-radius:6px; font-size:11px; cursor:pointer; font-weight:500; text-align:center; transition:0.2s;">Good Lead</button>
-            <button type="button" class="prefill-btn" onclick="prefillSpam()" style="flex:1; padding:6px 12px; background:rgba(244,63,94,0.1); color:var(--rose); border:1px solid rgba(244,63,94,0.2); border-radius:6px; font-size:11px; cursor:pointer; font-weight:500; text-align:center; transition:0.2s;">Spam Lead</button>
-            <button type="button" class="prefill-btn" onclick="prefillLow()" style="flex:1; padding:6px 12px; background:rgba(99,102,241,0.1); color:var(--accent); border:1px solid rgba(99,102,241,0.2); border-radius:6px; font-size:11px; cursor:pointer; font-weight:500; text-align:center; transition:0.2s;">Low Intent</button>
+            <button type="button" class="prefill-btn" onclick="prefillGood()"
+              style="flex:1; padding:6px 12px; background:rgba(16,185,129,0.1); color:var(--green); border:1px solid rgba(16,185,129,0.2); border-radius:6px; font-size:11px; cursor:pointer; font-weight:500; text-align:center; transition:0.2s;">Good
+              Lead</button>
+            <button type="button" class="prefill-btn" onclick="prefillSpam()"
+              style="flex:1; padding:6px 12px; background:rgba(244,63,94,0.1); color:var(--rose); border:1px solid rgba(244,63,94,0.2); border-radius:6px; font-size:11px; cursor:pointer; font-weight:500; text-align:center; transition:0.2s;">Spam
+              Lead</button>
+            <button type="button" class="prefill-btn" onclick="prefillLow()"
+              style="flex:1; padding:6px 12px; background:rgba(99,102,241,0.1); color:var(--accent); border:1px solid rgba(99,102,241,0.2); border-radius:6px; font-size:11px; cursor:pointer; font-weight:500; text-align:center; transition:0.2s;">Low
+              Intent</button>
           </div>
-          
+
           <form id="leadForm" onsubmit="submitLead(event)">
             <div class="form-group" style="margin-bottom:12px;">
-              <label style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Full Name</label>
+              <label
+                style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Full
+                Name</label>
               <input type="text" id="fname" placeholder="Rahul Sharma" required>
             </div>
             <div class="form-group" style="margin-bottom:12px;">
-              <label style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Email</label>
+              <label
+                style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Email</label>
               <input type="email" id="femail" placeholder="rahul@techflow.in" required>
             </div>
             <div class="form-group" style="margin-bottom:12px;">
-              <label style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Company</label>
+              <label
+                style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Company</label>
               <input type="text" id="fcompany" placeholder="TechFlow Solutions" required>
             </div>
             <div class="form-group" style="margin-bottom:12px;">
-              <label style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Message</label>
-              <textarea id="fmessage" placeholder="We need AI automation for our 1000+ daily tickets..." required style="min-height:60px;"></textarea>
+              <label
+                style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Message</label>
+              <textarea id="fmessage" placeholder="We need AI automation for our 1000+ daily tickets..." required
+                style="min-height:60px;"></textarea>
             </div>
             <div class="form-group" style="margin-bottom:12px;">
-              <label style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Source</label>
+              <label
+                style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Source</label>
               <select id="fsource">
                 <option value="website_form">Website Form</option>
                 <option value="api">API</option>
@@ -1397,14 +1417,20 @@
                 <option value="referral">Referral</option>
               </select>
             </div>
-            <div class="form-group" style="padding-top: 12px; border-top: 1px solid var(--border); margin-top: 8px; margin-bottom: 16px;">
-              <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; color:var(--rose); font-weight:500;">
-                <input type="checkbox" id="simulateFailureCheck" onchange="toggleSimulateFailure(this.checked)" style="width:auto; height:auto; accent-color:var(--rose);">
+            <div class="form-group"
+              style="padding-top: 12px; border-top: 1px solid var(--border); margin-top: 8px; margin-bottom: 16px;">
+              <label
+                style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:12px; color:var(--rose); font-weight:500;">
+                <input type="checkbox" id="simulateFailureCheck" onchange="toggleSimulateFailure(this.checked)"
+                  style="width:auto; height:auto; accent-color:var(--rose);">
                 Simulate LLM Failure (Triggers Celery 3x Retries -> DLQ)
               </label>
             </div>
-            <button type="submit" class="submit-btn" id="submitBtn" style="background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            <button type="submit" class="submit-btn" id="submitBtn"
+              style="background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
               POST /api/v1/leads
             </button>
           </form>
@@ -1412,40 +1438,55 @@
 
         <!-- CSV PANEL -->
         <div id="panel-csv" style="display:none;">
-          <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">Bulk ingest structured lead files. Select a template and upload mock system CSV documents.</p>
-          
-          <div style="background:var(--bg-primary); border:1px solid var(--border); border-radius:var(--radius-sm); padding:16px; margin-bottom:24px;">
+          <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">Bulk ingest structured lead files.
+            Select a template and upload mock system CSV documents.</p>
+
+          <div
+            style="background:var(--bg-primary); border:1px solid var(--border); border-radius:var(--radius-sm); padding:16px; margin-bottom:24px;">
             <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:13px;">
               <span style="color:var(--text-secondary);">Template Option:</span>
               <span style="color:var(--text-primary); font-weight:500;">B2B SaaS Prospects.csv</span>
             </div>
-            
-            <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; padding:12px; font-family:monospace; font-size:11px; overflow-x:auto; line-height:1.6;">
+
+            <div
+              style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; padding:12px; font-family:monospace; font-size:11px; overflow-x:auto; line-height:1.6;">
               <div style="color:var(--text-muted);">name,company,employees,budget,desc</div>
               <div style="color:var(--green);">Priya,ApexSec,850,95000,Enterprise dynamic AI migration</div>
               <div style="color:var(--green);">Amit,MiniShop,4,1200,Small custom shop CRM migration</div>
               <div style="color:var(--rose);">Null,FailCo,0,-1000,Malformed database structural data</div>
             </div>
           </div>
-          
-          <button onclick="simulateCSVUpload()" class="submit-btn" style="background:var(--green); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+
+          <button onclick="simulateCSVUpload()" class="submit-btn"
+            style="background:var(--green); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
             Simulate CSV File Upload
           </button>
         </div>
 
         <!-- WEBHOOK PANEL -->
         <div id="panel-webhook" style="display:none;">
-          <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">Ingest real-time webhooks formatted as unstructured payloads from external environments.</p>
-          
+          <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">Ingest real-time webhooks formatted as
+            unstructured payloads from external environments.</p>
+
           <div class="form-group" style="margin-bottom:16px;">
-            <label style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Payload Source Event</label>
-            <input type="text" value="Typeform Integration (Inbound Form)" readonly style="font-family:monospace; color:var(--text-primary); background:var(--bg-secondary); margin-top:6px;">
+            <label
+              style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Payload
+              Source Event</label>
+            <input type="text" value="Typeform Integration (Inbound Form)" readonly
+              style="font-family:monospace; color:var(--text-primary); background:var(--bg-secondary); margin-top:6px;">
           </div>
-          
+
           <div class="form-group" style="margin-bottom:24px;">
-            <label style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Raw JSON Payload</label>
-            <textarea id="webhook-payload" style="font-family:monospace; font-size:12px; min-height:180px; color:var(--text-primary); background:var(--bg-secondary); padding:12px; line-height:1.5; margin-top:6px;">{
+            <label
+              style="font-size:10px; font-weight:600; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Raw
+              JSON Payload</label>
+            <textarea id="webhook-payload"
+              style="font-family:monospace; font-size:12px; min-height:180px; color:var(--text-primary); background:var(--bg-secondary); padding:12px; line-height:1.5; margin-top:6px;">{
   "sender_name": "Sneha Reddy",
   "organization": "Infosys",
   "staff_size": 2000,
@@ -1453,9 +1494,15 @@
   "needs_summary": "Looking to migrate physical cluster assets to neural-net enabled edge models."
 }</textarea>
           </div>
-          
-          <button onclick="submitWebhookLead()" class="submit-btn" style="background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"></path></svg>
+
+          <button onclick="submitWebhookLead()" class="submit-btn"
+            style="background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; gap:8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <circle cx="12" cy="12" r="2"></circle>
+              <path
+                d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14">
+              </path>
+            </svg>
             Send Mock Webhook HTTP POST
           </button>
         </div>
@@ -1552,16 +1599,21 @@
             Pipeline Result
           </div>
           <!-- Placeholder State -->
-          <div id="resultPlaceholder" style="text-align:center; padding:60px 20px; border:2px dashed rgba(255,255,255,0.05); border-radius:12px; margin-top:16px;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="color:var(--text-muted); opacity:0.5; margin-bottom:16px;">
+          <div id="resultPlaceholder"
+            style="text-align:center; padding:60px 20px; border:2px dashed rgba(255,255,255,0.05); border-radius:12px; margin-top:16px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"
+              style="color:var(--text-muted); opacity:0.5; margin-bottom:16px;">
               <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
               <line x1="8" y1="21" x2="16" y2="21"></line>
               <line x1="12" y1="17" x2="12" y2="21"></line>
             </svg>
-            <div style="font-size:14px; font-weight:500; color:var(--text-secondary); margin-bottom:8px;">Awaiting Pipeline Execution</div>
-            <div style="font-size:12px; color:var(--text-muted); max-width:280px; margin:0 auto; line-height:1.5;">Submit a lead via the Intake Control panel on the left to see the AI enrichment and routing results appear here.</div>
+            <div style="font-size:14px; font-weight:500; color:var(--text-secondary); margin-bottom:8px;">Awaiting
+              Pipeline Execution</div>
+            <div style="font-size:12px; color:var(--text-muted); max-width:280px; margin:0 auto; line-height:1.5;">
+              Submit a lead via the Intake Control panel on the left to see the AI enrichment and routing results appear
+              here.</div>
           </div>
-          
+
           <div class="result-grid" id="resultGridContent" style="display:none;">
             <div class="enrichment-card">
               <h4>AI Enrichment</h4>
@@ -1761,10 +1813,10 @@
         b.style.color = 'var(--text-muted)';
       });
       document.querySelectorAll('#panel-api, #panel-csv, #panel-webhook').forEach(el => el.style.display = 'none');
-      
+
       const activePanel = document.getElementById('panel-' + tab);
       if (activePanel) activePanel.style.display = 'block';
-      
+
       const activeBtn = document.getElementById('tab-' + tab);
       if (activeBtn) {
         activeBtn.classList.add('active');
@@ -1800,7 +1852,7 @@
 
     async function simulateCSVUpload() {
       const csvData = `name,company,employees,budget,desc\nPriya,ApexSec,850,95000,Enterprise dynamic AI migration\nAmit,MiniShop,4,1200,Small custom shop CRM migration\nNull,FailCo,0,-1000,Malformed database structural data`;
-      
+
       const blob = new Blob([csvData], { type: 'text/csv' });
       const formData = new FormData();
       formData.append('file', blob, 'B2B SaaS Prospects.csv');
