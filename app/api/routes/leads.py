@@ -60,6 +60,7 @@ async def create_lead(
         company=lead_request.company,
         message=lead_request.message,
         db=db,
+        source=lead_request.source or "",
     )
 
     if not is_valid:

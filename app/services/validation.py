@@ -182,6 +182,7 @@ async def validate_lead(
     company: str,
     message: str,
     db: AsyncSession,
+    source: str = "",
 ) -> tuple[bool, str | None, str | None]:
     """Run all validation checks on an incoming lead.
 
