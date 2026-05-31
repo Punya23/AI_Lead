@@ -10,33 +10,36 @@
 
 ```mermaid
 flowchart LR
-    subgraph Input["📥 Intake Layer"]
+    classDef default font-size:14px;
+    classDef large font-size:16px,font-weight:bold;
+
+    subgraph Input["Intake Layer"]
         A[REST API] 
         B[CSV Upload]
         C[Webhook]
     end
 
-    subgraph Sync["⚡ Sync Validation"]
+    subgraph Sync["Sync Validation"]
         D{Valid?}
-        E[❌ Reject]
+        E[Reject]
     end
 
-    subgraph Async["🔄 Async Pipeline — Celery + Redis"]
-        F["🤖 AI Enrichment\n(Gemini / Mock)"]
-        G["📊 Deterministic\nScoring (0-100)"]
-        H["🎯 Intelligent\nRouting"]
+    subgraph Async["Async Pipeline — Celery + Redis"]
+        F["AI Enrichment\n(Gemini / Mock)"]
+        G["Deterministic\nScoring (0-100)"]
+        H["Intelligent\nRouting"]
     end
 
-    subgraph Storage["💾 Storage"]
+    subgraph Storage["Storage"]
         I[(PostgreSQL)]
         J[(ChromaDB\nVector DB)]
     end
 
-    subgraph Output["📤 Output"]
-        K["🟢 SALES_QUEUE\n(Score ≥ 70)"]
-        L["🟡 NURTURE_QUEUE\n(Score 40-69)"]
-        M["🔴 ARCHIVE\n(Score < 40)"]
-        N["📢 Slack/Discord\nWebhook"]
+    subgraph Output["Output"]
+        K["SALES_QUEUE\n(Score ≥ 70)"]
+        L["NURTURE_QUEUE\n(Score 40-69)"]
+        M["ARCHIVE\n(Score < 40)"]
+        N["Slack/Discord\nWebhook"]
     end
 
     A & B & C --> D
