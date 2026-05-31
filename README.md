@@ -8,46 +8,26 @@ An AI powered lead pipeline with semantic spam detection (ChromaDB), LangGraph s
 
 The pipeline separates **synchronous validation** (rejections under 10ms) from **asynchronous processing** (LLM enrichment via Celery workers).
 
-```mermaid
-flowchart LR
-    classDef default font-size:14px;
-    classDef large font-size:16px,font-weight:bold;
+![Pipeline Architecture](docs/pipeline_architecture.png)
 
-    subgraph Input["Intake Layer (<10ms)"]
-        A[REST API] 
-        B[CSV Batch]
-        C[Webhook]
-    end
-
-    subgraph Sync["Sync Validation"]
-        D{Valid Email/Spam/Hash?}
-        E[Reject to DLQ]
-    end
-
-    subgraph Async["Async Workers (Celery + Redis)"]
-        F["AI Enrichment\n(Gemini 2.0 / Mock)"]
-        G["Deterministic Scoring"]
-        H["Intelligent Routing"]
-    end
-
-    subgraph Storage["Storage Layer"]
-        I[(PostgreSQL\nLeads & Audit)]
-        J[(ChromaDB\nVector Embeddings)]
-    end
-
-    A & B & C --> D
-    D -->|Fail| E
-    D -->|Pass| F
-    F --> G --> H
-    F -.->|Store Embedding| J
-    H -.->|Store Result| I
-```
 
 ### Pipeline State Machine
 
 Every lead transitions through a tracked state machine:
 
-![State Machine](docs/state_machine.png)
+```mermaid
+stateDiagram-v2
+    [*] --> RECEIVED
+    RECEIVED --> VALIDATED: Validation Passes
+    RECEIVED --> REJECTED: Spam/Gibberish/Dup detected
+    VALIDATED --> ENRICHED: LLM Extracts details
+    ENRICHED --> SCORED: Deterministic math applied
+    SCORED --> ROUTED: Placed in Nurture/Sales/Archive
+    
+    ENRICHED --> FAILED: API Down/Rate Limit
+    FAILED --> ENRICHED: Celery Auto-Retry (x3)
+    FAILED --> DEAD_LETTER: Retries Exhausted
+```
 
 ---
 
