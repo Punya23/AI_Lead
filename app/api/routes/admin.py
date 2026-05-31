@@ -212,3 +212,17 @@ async def get_analytics(
         "nurture_queue": nurture_queue,
         "archived": archive,
     }
+
+
+@router.get("/vector-store")
+async def get_vector_store_info():
+    from app.services.vector_store import _get_collection
+    from app.core.config import settings
+    collection = _get_collection()
+    return {
+        "collection": "lead_messages",
+        "embeddings_count": collection.count() if collection else 0,
+        "semantic_dedup_enabled": settings.ENABLE_SEMANTIC_DEDUP,
+        "similarity_threshold": settings.SEMANTIC_SIMILARITY_THRESHOLD,
+        "embedding_model": "text-embedding-004",
+    }
