@@ -335,7 +335,7 @@ curl -X POST http://localhost:8000/api/v1/leads \
 
 ```bash
 pytest tests/ -v                       # all 108 tests
-pytest tests/ -v --ignore=test_integration.py  # unit only (no Docker)
+pytest tests/ -v --ignore=tests/test_integration.py  # unit only (no Docker)
 pytest tests/test_pipeline.py -v       # graph traversal, state accumulation, error routing
 pytest tests/test_retry.py -v          # checkpoint resume, backoff, dead-letter
 pytest tests/test_integration.py -v    # full Docker stack
