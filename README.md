@@ -265,6 +265,16 @@ curl -X POST http://localhost:8000/api/v1/leads \
 
 ---
 
+## Screenshots
+
+### Live Dashboard
+![Dashboard](docs/screenshot_dashboard.png)
+
+### Per-Node Execution Trace (5 agents logged)
+![Logs](docs/screenshot_logs.png)
+
+---
+
 ## API Reference
 
 ### Lead Intake
