@@ -59,7 +59,7 @@ flowchart LR
 
 ## Failure Recovery — Two-Level System
 
-![Failure Recovery](docs/Geta.ai%20Enterprise%20Lead%20Processing%20Architecture%20-%20visual%20selection.png)
+<img src="docs/Geta.ai%20Enterprise%20Lead%20Processing%20Architecture%20-%20visual%20selection.png" alt="Failure Recovery" width="800" />
 
 **Level 1 — LLM Call Retries** (within a single Celery task):
 ```python
