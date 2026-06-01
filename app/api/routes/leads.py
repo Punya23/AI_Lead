@@ -174,6 +174,7 @@ async def create_leads_batch(
 
     queued = 0
     rejections: list[BatchRejection] = []
+    lead_ids: list[str] = []
 
     for row_num, row in enumerate(reader, start=2):  # Start at 2 (header is row 1)
         name = row.get("name", "").strip()
@@ -230,11 +231,12 @@ async def create_leads_batch(
         # Queue for processing
         process_lead.delay(str(lead.id))
         queued += 1
+        lead_ids.append(str(lead.id))
 
     total = queued + len(rejections)
     logger.info(f"Batch upload completed: {queued}/{total} queued, {len(rejections)} rejected")
 
-    return LeadBatchResponse(total=total, queued=queued, rejected=rejections)
+    return LeadBatchResponse(total=total, queued=queued, rejected=rejections, lead_ids=lead_ids)
 
 
 @router.get("/leads", response_model=LeadListResponse)

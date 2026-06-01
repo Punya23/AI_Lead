@@ -156,3 +156,4 @@ class LeadBatchResponse(BaseModel):
     total: int
     queued: int
     rejected: list[BatchRejection]
+    lead_ids: list[str] = []

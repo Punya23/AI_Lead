@@ -1859,14 +1859,24 @@
       }
 
       try {
-        const res = await fetch(API + '/webhooks/typeform', {
+        const res = await fetch(API + '/webhooks/lead', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
         
         if (res.ok) {
+          const data = await res.json();
+          currentLeadId = data.lead_id;
+
+          setStage('state-received', 'active');
+          addTerminalLog('APP', `Received webhook payload. Trace: ${currentLeadId.slice(0, 8)}`);
+
           alert("Webhook payload sent successfully!");
+          setTimeout(() => {
+            refreshAnalytics();
+            fetchDBCounts();
+          }, 1000);
         } else {
           alert("Error submitting webhook");
         }
@@ -1893,7 +1903,18 @@ Null ${rid},null${rid}@mailinator.com,FailCo ${rid},Malformed database structura
         });
         
         if (res.ok) {
-          alert("Simulated Batch uploaded successfully!");
+          const data = await res.json();
+          if (data.lead_ids && data.lead_ids.length > 0) {
+            currentLeadId = data.lead_ids[0]; // Trace the first lead visually
+            setStage('state-received', 'active');
+            addTerminalLog('APP', `Received CSV Batch (${data.queued} leads). Tracing lead: ${currentLeadId.slice(0, 8)}`);
+          }
+
+          alert(`Simulated Batch uploaded successfully! Queued: ${data.queued}`);
+          setTimeout(() => {
+            refreshAnalytics();
+            fetchDBCounts();
+          }, 1500);
         } else {
           alert("Error uploading CSV");
         }
@@ -1938,8 +1959,18 @@ Null,null@mailinator.com,FailCo,Malformed database structural data,csv_upload`;
             
             if (res.ok) {
               const data = await res.json();
+              if (data.lead_ids && data.lead_ids.length > 0) {
+                currentLeadId = data.lead_ids[0];
+                setStage('state-received', 'active');
+                addTerminalLog('APP', `Received CSV Batch (${data.queued} leads). Tracing lead: ${currentLeadId.slice(0, 8)}`);
+              }
+
               alert(`Batch uploaded successfully! Total: ${data.total}, Queued: ${data.queued}, Rejected: ${data.rejected.length}`);
               fileInput.value = ""; // clear input
+              setTimeout(() => {
+                refreshAnalytics();
+                fetchDBCounts();
+              }, 1500);
             } else {
               alert("Error processing CSV file");
             }
