@@ -1,161 +1,334 @@
-# Geta.ai — AI Powered Lead Processing Pipeline
+# ▸ Geta AI — Lead Processing Pipeline
 
-An AI powered lead pipeline with semantic spam detection (ChromaDB), LangGraph state orchestration, and exponential backoff retry resilience. Built as a Geta.ai engineering intern assignment.
+> **Reliability first. AI second.**  
+> A production-grade, fault-tolerant lead pipeline with a **5-agent LangGraph orchestration** (Enrichment → Research → Categorization → Scoring → Routing), semantic spam detection via ChromaDB, and a two-level exponential backoff retry system — built as a Geta.ai engineering intern assignment.
+
+**Live Demo:** `https://[INSERT_RAILWAY_URL]/dashboard`  
+**API Docs:** `https://[INSERT_RAILWAY_URL]/docs`
+
+---
+
+## Why This Exists
+
+Most AI pipelines are fragile happy-path demos. They break the moment an LLM times out, returns malformed JSON, or the same lead is submitted twice with a rephrased message.
+
+This system was designed to handle all of that gracefully:
+
+- Synchronous validation rejects bad data in **under 10ms** — before any LLM call is made
+- Three specialized Gemini agents handle enrichment with strict JSON schemas and corrective-prompt retries
+- Scoring and routing use **pure Python math** — no LLM, no non-determinism
+- Every failure has a defined recovery path — no lead is ever silently lost
 
 ---
 
 ## System Architecture
 
-The pipeline separates **synchronous validation** (rejections under 10ms) from **asynchronous processing** (LLM enrichment via Celery workers).
+```mermaid
+flowchart TD
+    A["▸ Lead Input\nREST API · CSV Batch · Webhook"] --> B
 
-![Detailed Pipeline Architecture](docs/detailed_architecture.png)
+    subgraph VAL ["⚙️ Validation Layer — synchronous · < 10ms · no LLM"]
+        B{"Valid lead?"}
+    end
 
-### Pipeline State Machine
+    B -->|"✗ spam / duplicate / malformed"| C[("❖ rejected_leads\nPostgreSQL")]
+    B -->|"✓ passes"| D["✉ Celery Queue\nRedis"]
 
-Every lead transitions through a tracked state machine:
+    D --> GRAPH
 
-![State Machine](docs/state_machine.png)
+    subgraph GRAPH ["⚙️ LangGraph — 5-Node Multi-Agent Pipeline (async Celery worker)"]
+        E1["◦ enrichment_agent_node\nGemini Flash\nintent · urgency · pain_points"]
+        --> E2["◦ research_agent_node\nGemini Flash\ncompany_type · ai_summary"]
+        --> E3["◦ categorization_agent_node\nGemini Flash\nlead_category"]
+        --> E4["◦ scoring_agent_node\nPure Python · 0–100\nsignal_breakdown"]
+        --> E5["◦ routing_agent_node\nPure Python\nthreshold rules"]
+    end
 
----
+    E5 -->|"≥ 70"| S["+ SALES_QUEUE"]
+    E5 -->|"40–69"| N["~ NURTURE_QUEUE"]
+    E5 -->|"< 40"| AR["- ARCHIVE"]
 
-## Core Features
+    subgraph DB ["❖ PostgreSQL — full audit trail"]
+        T["leads · enrichments · scores\nrouting_decisions · execution_logs"]
+    end
 
-### Semantic Deduplication (ChromaDB)
-
-Hash based dedup catches exact duplicates, but spam bots rephrase the same message with different emails and names. This pipeline goes further: each incoming message is embedded using Gemini's `text-embedding-004` model and stored in ChromaDB. On every new lead, cosine similarity is computed against existing embeddings. If similarity exceeds the threshold (default `0.85`), the lead is rejected as `SEMANTIC_DUPLICATE`, catching paraphrased spam that SHA-256 hashing alone would miss.
-
-The system is designed to fail open. If ChromaDB or the embedding API is down, the lead passes through. Semantic dedup is a bonus safety net, not a gate.
-
-### Validation Layer
-- **Disposable Email Detection:** Rejects temporary email providers (`mailinator.com`, `guerrillamail.com`, etc.)
-- **Gibberish Detection:** Mathematical character-to-letter ratio checks catch keyboard mashing
-- **Spam Keywords:** Pattern matching for known spam phrases
-- **SHA-256 Payload Hashing:** Deterministic content hash prevents exact duplicates
-
-### Real-Time SSE Dashboard
-
-A live processing dashboard streams pipeline events over Server-Sent Events as leads move through the pipeline. Open `http://localhost:8000/dashboard` to watch leads transition from RECEIVED → VALIDATED → ENRICHED → SCORED → ROUTED in real time. No polling. No page refresh. Failures, retries, and dead-letter events appear instantly.
-
-### Scoring Model
-
-The pipeline uses a **Multi-Agent LangGraph workflow** (Enrichment Agent → Research Agent → Categorization Agent) to extract structured data (Intent, Urgency, Company Type, Pain Points) and infer context from the company domain. This structured output is then scored using a **pure Python math function** with no LLM involvement, ensuring the same input always produces the same score.
-
-| Signal | Max Points | Source |
-|--------|-----------|--------|
-| Intent Clarity | 25 | LLM enrichment |
-| Urgency Signal | 20 | LLM enrichment |
-| Company Completeness | 20 | Lead metadata |
-| Pain Point Specificity | 20 | LLM enrichment |
-| Message Quality | 15 | Rule based heuristic |
-
-Routing thresholds are configurable via environment variables:
-- `SALES_QUEUE`: Score >= 70
-- `NURTURE_QUEUE`: Score 40-69
-- `ARCHIVE`: Score < 40
+    GRAPH --> DB
+```
 
 ---
 
-## Failure Recovery
+## Pipeline State Machine
 
-This is the core resilience layer. The pipeline uses a two-level retry system:
+```mermaid
+stateDiagram-v2
+    direction LR
 
-**Level 1 — LLM Call Retries (within a single Celery task):**
+    [*] --> RECEIVED : lead submitted
+    RECEIVED --> VALIDATED : passes all checks
+    VALIDATED --> ENRICHED : 3 AI agents complete
+    ENRICHED --> SCORED : Python scoring engine
+    SCORED --> ROUTED : threshold routing
+    ROUTED --> COMPLETE : persisted + queued
+
+    RECEIVED --> REJECTED : spam · exact duplicate · invalid fields
+    VALIDATED --> FAILED : LLM agent error
+    ENRICHED --> FAILED : scoring error
+    FAILED --> VALIDATED : Celery retry\n(checkpoint skips completed nodes)
+    FAILED --> DEAD_LETTER : all retries exhausted\nflag_for_review = true
+
+    COMPLETE --> [*]
+    REJECTED --> [*]
+    DEAD_LETTER --> [*]
+```
+
+---
+
+## The 5-Agent LangGraph Pipeline
+
+```mermaid
+flowchart LR
+    IN([Lead]) --> A
+
+    subgraph AGENTS ["5 LangGraph Nodes — Sequential, Dependency-Driven"]
+        A["◦ enrichment_agent_node\n─────────────────\nInputs: message\nOutputs: estimated_intent\n         urgency_level\n         pain_points"]
+        --> B["◦ research_agent_node\n─────────────────\nInputs: domain, message\nOutputs: company_type\n         ai_summary"]
+        --> C["◦ categorization_agent_node\n─────────────────\nInputs: intent + company\nOutputs: lead_category\n         → persists to DB"]
+        --> D["◦ scoring_agent_node\n─────────────────\nInputs: enrichment_result\nOutputs: score 0–100\n         signal_breakdown\n         confidence"]
+        --> E["◦ routing_agent_node\n─────────────────\nInputs: score\nOutputs: queue assignment\n         routing_reason"]
+    end
+
+    A & B & C -->|"on error"| ERR["! error_node\nraises exception\n→ Celery retry\nCheckpoint prevents\nre-running done nodes"]
+
+    E --> OUT(["Queue\nAssigned"])
+```
+
+> **Why sequential, not parallel?**  
+> `categorization_agent_node` needs **both** intent (from enrichment) **and** company context (from research). The dependency chain forces the order. `scoring_agent_node` and `routing_agent_node` use no LLM at all — eliminating non-determinism from the critical routing decision.
+
+---
+
+## Failure Recovery — Two-Level System
+
+```mermaid
+flowchart TD
+    A["LLM Call"] --> B{"Response OK?"}
+    B -->|Yes| Z["✓ Continue to next node"]
+
+    B -->|"Timeout / 429 / 503"| C{"Attempt < 3?"}
+    C -->|Yes| D["⧖ Exponential backoff\n2s → 4s → 8s + jitter"]
+    D --> A
+    C -->|No| G
+
+    B -->|"Malformed JSON"| E["✎ Corrective prompt retry\n'Respond ONLY with JSON object'"]
+    E --> F{"Fixed?"}
+    F -->|Yes| Z
+    F -->|No| G
+
+    G["! error_node triggered\nraises AgentFailureException"] --> H{"Celery retries < 3?"}
+    H -->|Yes| I["↻ Task restart\n① Read pipeline_checkpoint\n② Skip completed nodes\n③ Re-run only failed node"]
+    I --> A
+    H -->|No| J["✗ DEAD_LETTER\nflag_for_review = true\nflag_reason = which node failed\nvisible at /admin/failures"]
+```
+
+**Level 1 — LLM Call Retries** (within a single Celery task):
 ```python
 LLM_RETRY_POLICY = {
     "max_attempts": 3,
-    "initial_delay_seconds": 1.0,
-    "backoff_multiplier": 2.0,       # 1s → 2s → 4s
+    "initial_delay_seconds": 2.0,
+    "backoff_multiplier": 2.0,    # 2s → 4s → 8s
     "max_delay_seconds": 10.0,
 }
 ```
 
-**Level 2 — Celery Task Retries (if the entire task fails):**
+**Level 2 — Celery Task Retries** (if the entire task fails):
 ```python
 LEAD_PIPELINE_RETRY_POLICY = {
     "max_retries": 3,
-    "default_retry_delay": 1,        # Initial delay: 1 second
-    "retry_backoff": True,           # Exponential backoff
-    "retry_backoff_max": 30,         # Cap at 30 seconds
-    "retry_jitter": True,            # Random jitter to prevent thundering herd
+    "default_retry_delay": 1,
+    "retry_backoff": True,        # exponential backoff
+    "retry_backoff_max": 30,      # cap at 30 seconds
+    "retry_jitter": True,         # prevents thundering herd
+    "acks_late": True,            # re-queues on worker crash
 }
 ```
 
-**Dead Letter Queue:** If all retries are exhausted, the lead is moved to `DEAD_LETTER` status with `flag_for_review = True`. This ensures no lead is silently lost. Flagged leads are queryable via the admin API.
+| Failure | Level 1 (LLM) | Level 2 (Celery) | Final State |
+|---|---|---|---|
+| LLM Timeout | 3× backoff (2s/4s/8s) | 3× task retry | DEAD_LETTER |
+| Malformed JSON | Corrective prompt + retry | 3× task retry | DEAD_LETTER |
+| Rate Limit (429) | Wait + jitter, retry 3× | 3× task retry | DEAD_LETTER |
+| DB Connection Loss | — | Pool retry → task requeue | DEAD_LETTER |
+| Worker Crash | — | `acks_late` auto re-queues | Resumes cleanly |
+| All retries exhausted | — | Dead letter + `flag_for_review` | DEAD_LETTER |
+| No API key | — | Mock enrichment activated | COMPLETE |
 
-**Worker Crash Recovery:** Tasks use `acks_late=True`, meaning Celery only acknowledges task completion after the worker finishes. If a worker crashes mid-task, Redis automatically re-queues it to another worker.
+> **Node-level checkpoint:** A `pipeline_checkpoint` JSONB column on each lead stores each node's output as it completes. On Celery retry, nodes that already succeeded read from the checkpoint and **skip their LLM calls entirely**. A crash during `research_agent_node` does not re-bill the `enrichment_agent_node` call.
 
-| Failure | Recovery | Retries |
-|---------|----------|---------|
-| LLM Timeout / 503 | Exponential backoff (1s → 2s → 4s) | 3 |
-| Malformed JSON from LLM | Corrective reprompt / fallback | 3 |
-| Rate Limit (429) | Backoff + jitter | 3 |
-| DB Connection Loss | Pool retry → Celery task requeue | 3 |
-| Worker Crash | `acks_late` re-queues to another worker | Automatic |
-| All retries exhausted | Dead letter + `flag_for_review` | — |
-| No API key | Mock enrichment (automatic fallback) | — |
+---
+
+## Duplicate & Spam Detection
+
+```mermaid
+flowchart LR
+    A["Incoming Lead"] --> B["SHA-256 hash\nemail + company + message"]
+    B --> C{"Hash in DB?"}
+    C -->|Yes| D["✗ REJECTED\nDUPLICATE_LEAD\nreferences original lead_id"]
+    C -->|No| E["Embed message\nGemini text-embedding-004"]
+    E --> F["ChromaDB\ncosine similarity\nvs. recent embeddings"]
+    F --> G{"Similarity\n≥ 0.85?"}
+    G -->|Yes| H["✗ REJECTED\nSEMANTIC_DUPLICATE\ncatches paraphrased spam"]
+    G -->|No| I["✓ Lead passes\nStore embedding"]
+```
+
+> **Fail-open design:** If ChromaDB or the embedding API is unavailable, the lead passes through. Semantic dedup is a bonus safety net, not a blocking gate. Availability matters more than perfect dedup accuracy.
+
+Additional validation checks run before the dedup step:
+- **Disposable email detection** — rejects `mailinator.com`, `guerrillamail.com`, and other known temporary providers
+- **Gibberish detection** — character-to-letter ratio catches keyboard mashing
+- **Spam keyword matching** — pattern-based filter for known spam phrases
+- **Required field validation** — name, email, company, message all enforced by Pydantic v2
+
+---
+
+## Scoring Model
+
+The three AI agents extract structured data. A **pure Python function** then scores it — no LLM, no randomness.
+
+| Signal | Max Points | Source |
+|---|---|---|
+| Estimated intent clarity | 25 | `enrichment_agent_node` |
+| Urgency level | 20 | `enrichment_agent_node` |
+| Company completeness | 20 | `research_agent_node` |
+| Pain point specificity | 20 | `enrichment_agent_node` |
+| Message quality | 15 | Rule-based heuristic |
+| **Total** | **100** | |
+
+Every score response includes a `signal_breakdown` dict with per-signal point contributions — never just a number. Routing thresholds are configurable via environment variables:
+
+| Score | Queue |
+|---|---|
+| ≥ 70 | `SALES_QUEUE` |
+| 40 – 69 | `NURTURE_QUEUE` |
+| < 40 | `ARCHIVE` |
+
+---
+
+## Real-Time SSE Dashboard
+
+A live processing dashboard streams pipeline events over Server-Sent Events as each lead moves through nodes. Open `/dashboard` to watch:
+
+```
+RECEIVED → VALIDATED → ENRICHED → SCORED → ROUTED → COMPLETE
+```
+
+No polling. No page refresh. Failures, retries, and dead-letter events appear instantly. Each state transition is driven by an event published at the end of its corresponding LangGraph node.
+
+---
+
+## Quick Start
+
+```bash
+git clone https://github.com/Punya23/AI_Lead
+cd AI_Lead
+cp .env.example .env
+# GOOGLE_API_KEY is optional — mock fallback activates automatically without it
+docker compose up --build
+```
+
+The entire stack (API, Worker, PostgreSQL, Redis) starts with one command. Alembic migrations run automatically on startup.
+
+```bash
+# Verify the stack is healthy
+curl http://localhost:8000/health
+```
+```json
+{
+  "status": "healthy",
+  "db": "ok",
+  "redis": "ok",
+  "worker": "ok",
+  "enrichment_mode": "gemini"
+}
+```
+
+Open the live dashboard: **http://localhost:8000/dashboard**
 
 ---
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `GOOGLE_API_KEY` | `your-gemini-api-key-here` | Gemini API key. Leave as-is for mock enrichment |
-| `DATABASE_URL_ASYNC` | `postgresql+asyncpg://...` | PostgreSQL connection (FastAPI) |
-| `DATABASE_URL_SYNC` | `postgresql+psycopg2://...` | PostgreSQL connection (Celery workers) |
-| `REDIS_URL` | `redis://redis:6379/0` | Redis connection string |
-| `ROUTING_HIGH_THRESHOLD` | `70` | Minimum score for Sales Queue |
-| `ROUTING_MEDIUM_THRESHOLD` | `40` | Minimum score for Nurture Queue |
-| `SIMULATE_FAILURES` | `false` | Enable random failure injection for testing |
-| `SEMANTIC_SIMILARITY_THRESHOLD` | `0.85` | ChromaDB cosine similarity cutoff |
-| `SLACK_WEBHOOK_URL` | *(empty)* | Slack notification webhook |
-| `DISCORD_WEBHOOK_URL` | *(empty)* | Discord notification webhook |
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `GOOGLE_API_KEY` | No | — | Gemini API key (`AIzaSy...`). Mock fallback activates without it |
+| `DATABASE_URL_ASYNC` | Yes | — | `postgresql+asyncpg://...` — FastAPI async engine |
+| `DATABASE_URL_SYNC` | Yes | — | `postgresql+psycopg2://...` — Celery sync engine |
+| `REDIS_URL` | Yes | — | Redis connection string |
+| `ROUTING_HIGH_THRESHOLD` | No | `70` | Minimum score for SALES_QUEUE |
+| `ROUTING_MEDIUM_THRESHOLD` | No | `40` | Minimum score for NURTURE_QUEUE |
+| `SIMULATE_FAILURES` | No | `false` | Set `true` to inject random LLM failures for demo |
+| `SEMANTIC_SIMILARITY_THRESHOLD` | No | `0.85` | Cosine similarity cutoff for semantic dedup |
+| `LLM_MODEL` | No | `gemini-2.0-flash` | Gemini model to use for all agents |
+| `LLM_MAX_RETRIES` | No | `3` | Max LLM-level retry attempts per node |
+| `LLM_TIMEOUT_SECONDS` | No | `30` | Per-call LLM timeout |
+| `SLACK_WEBHOOK_URL` | No | — | Slack notifications for dead-letter events |
+| `DISCORD_WEBHOOK_URL` | No | — | Discord notifications for dead-letter events |
 
 ---
 
 ## Demo Walkthrough
 
-No API key is required. The system detects missing keys and falls back to a deterministic, keyword based mock enrichment engine.
-
+### 1. Submit a high-intent lead
 ```bash
-# 1. Start the system
-docker compose up --build
-```
-
-After the containers are running, open a new terminal tab and try the following:
-
-```bash
-# 2. Submit a high-intent lead
 curl -X POST http://localhost:8000/api/v1/leads \
   -H "Content-Type: application/json" \
-  -d '{"name":"Sarah Chen","email":"sarah@acmecorp.io",
-       "company":"Acme SaaS","message":"We need AI automation for our outbound sales pipeline urgently. Budget approved."}'
+  -d '{
+    "name": "Sarah Chen",
+    "email": "sarah@acmesaas.io",
+    "company": "Acme SaaS",
+    "message": "We need AI automation for our outbound sales pipeline urgently. Budget is approved for Q1."
+  }'
+```
 
-# 3. Upload a CSV batch
+### 2. Watch it in real time
+Open **http://localhost:8000/dashboard** and watch the lead transition through every state live.
+
+### 3. Inspect the full record and execution trace
+```bash
+curl http://localhost:8000/api/v1/leads/{lead_id}
+curl http://localhost:8000/api/v1/admin/logs/{lead_id}
+```
+The logs endpoint shows every node that ran — with timestamp, duration, and attempt number.
+
+### 4. Upload a CSV batch
+```bash
 # A sample CSV with 5 leads is included in scripts/
 curl -X POST http://localhost:8000/api/v1/leads/batch \
   -F "file=@scripts/demo_leads.csv"
 ```
 
-**Watch real-time processing:**
-Open `http://localhost:8000/dashboard` in your browser.
-
-**Check lead state:**
+### 5. Simulate failures (dead-letter demo)
 ```bash
-# Replace {lead_id} with an ID from the dashboard or curl responses
-curl http://localhost:8000/api/v1/leads/{lead_id}
-```
+# In .env: SIMULATE_FAILURES=true — then restart
+docker compose up
 
-**View failed/flagged leads:**
-```bash
+# After ~45 seconds, check the dead letter queue
 curl http://localhost:8000/api/v1/admin/failures
 ```
 
-**Simulate failures:**
+### 6. Test semantic duplicate detection
 ```bash
-# In .env, set: SIMULATE_FAILURES=true
-# Then restart:
-docker compose up
+# Submit the original
+curl -X POST http://localhost:8000/api/v1/leads \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Original","email":"original@realco.io","company":"RealCo",
+       "message":"We urgently need AI automation for our sales pipeline. Budget approved."}'
+
+# Submit a paraphrased version with a different email
+curl -X POST http://localhost:8000/api/v1/leads \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Spammer","email":"different@spambot.net","company":"SpamCo",
+       "message":"We critically require AI tools for immediate sales workflow automation. Funding ready."}'
+# → Returns: REJECTED / SEMANTIC_DUPLICATE
 ```
 
 ---
@@ -164,100 +337,119 @@ docker compose up
 
 ### Lead Intake
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/v1/leads` | Submit single lead |
-| `POST` | `/api/v1/leads/batch` | Upload CSV file |
-| `POST` | `/api/v1/webhooks/lead` | Webhook receiver (202 Accepted) |
+|---|---|---|
+| `POST` | `/api/v1/leads` | Submit single lead — validates sync, queues async |
+| `POST` | `/api/v1/leads/batch` | Upload CSV — returns per-row reject reasons |
+| `POST` | `/api/v1/webhooks/lead` | Webhook receiver — returns 202, processes async |
 
-### Query & Admin
+### Query
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/v1/leads` | List leads (filter: `?status=COMPLETE`) |
-| `GET` | `/api/v1/leads/{id}` | Full lead detail + enrichment + score + routing |
-| `GET` | `/api/v1/admin/analytics` | Dashboard metrics |
-| `GET` | `/api/v1/admin/queue-status` | Pipeline processing stats |
-| `GET` | `/api/v1/admin/failures` | Failed and flagged leads |
-| `GET` | `/api/v1/admin/stats/routing` | Routing distribution |
-| `GET` | `/api/v1/stream/pipeline` | SSE real time event stream |
+|---|---|---|
+| `GET` | `/api/v1/leads` | Paginated list — filter by `?status=FAILED` |
+| `GET` | `/api/v1/leads/{id}` | Full record + enrichment + score + routing decision |
+
+### Admin & Observability
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/v1/admin/logs/{id}` | Per-node execution trace for a lead |
+| `GET` | `/api/v1/admin/failures` | All leads with `flag_for_review = true` |
+| `GET` | `/api/v1/admin/queue-status` | Active / queued / failed counts |
+| `GET` | `/api/v1/admin/analytics` | Dashboard metrics and throughput stats |
+| `GET` | `/api/v1/admin/stats/routing` | Routing distribution breakdown |
+| `GET` | `/api/v1/stream/pipeline` | SSE event stream (raw) |
 
 ### System
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/health` | DB + Redis + Worker + Queue + Enrichment mode |
+|---|---|---|
+| `GET` | `/health` | Full system status — DB, Redis, worker, enrichment mode |
 | `GET` | `/health/live` | Liveness probe |
 | `GET` | `/health/ready` | Readiness probe |
-| `GET` | `/dashboard` | Visual dashboard UI |
-| `GET` | `/docs` | Swagger UI |
+| `GET` | `/dashboard` | Live SSE dashboard UI |
+| `GET` | `/docs` | Swagger interactive docs |
 
 ---
 
 ## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
-| API Framework | FastAPI (Async HTTP, Pydantic validation, Rate Limiting) |
-| Message Queue | Redis + Celery |
-| Database | PostgreSQL + SQLAlchemy (dual async/sync engines) |
-| AI/LLM | Gemini 2.0 Flash |
-| Workflow | LangGraph |
-| Vector DB | ChromaDB |
-| UI | Vanilla JS / CSS (Server Sent Events) |
-| Infrastructure | Docker Compose |
+|---|---|
+| Runtime | Python 3.11+ |
+| API Framework | FastAPI (async) + Pydantic v2 |
+| Workflow Orchestration | LangGraph |
+| Task Queue | Celery + Redis |
+| Database | PostgreSQL · SQLAlchemy 2.0 (asyncpg + psycopg2) · Alembic |
+| Vector Store | ChromaDB |
+| LLM | Google Gemini 2.0 Flash + deterministic mock fallback |
+| Logging | loguru (structured JSON) |
+| HTTP Client | httpx (async) |
+| Containers | Docker + Docker Compose |
+| Deployment | Railway |
+
+> **Why two SQLAlchemy engines?** FastAPI is fully async and requires `asyncpg`. Celery workers are synchronous and use `psycopg2`. Mixing them causes event loop conflicts — discovered during development. They share the same PostgreSQL instance through separate engine instances.
 
 ---
 
 ## Testing
 
-102 tests (72 unit + 30 integration).
-
-| File | Tests | Coverage |
-|------|-------|----------|
-| `test_validation.py` | 17 | Email, spam keywords, gibberish, disposable domains, hashing |
-| `test_scoring.py` | 16 | Deterministic math, intent/urgency edge cases |
-| `test_pipeline.py` | 12 | State transitions, routing thresholds |
-| `test_retry.py` | 15 | Exponential backoff, failure simulation, dead letter routing |
-| `test_integration.py` | 30 | Full Docker stack + real Gemini API |
-
 ```bash
-# Unit tests (no Docker needed)
-pytest tests/ -v --ignore=tests/test_integration.py
-
-# Integration tests (Docker must be running)
-pytest tests/test_integration.py -v
+pytest tests/ -v                       # all 108 tests
+pytest tests/ -v --ignore=test_integration.py  # unit only (no Docker)
+pytest tests/test_pipeline.py -v       # graph traversal, state accumulation, error routing
+pytest tests/test_retry.py -v          # checkpoint resume, backoff, dead-letter
+pytest tests/test_integration.py -v    # full Docker stack
 ```
+
+| File | Tests | What it covers |
+|---|---|---|
+| `test_validation.py` | 17 | Email format, disposable domains, gibberish detection, SHA-256 dedup, semantic dedup |
+| `test_scoring.py` | 16 | Weighted signal math, determinism with identical inputs, score boundaries |
+| `test_pipeline.py` | 20 | 5-node graph traversal, state accumulation between nodes, error propagation, checkpoint resume |
+| `test_retry.py` | 19 | LLM-level exponential backoff, corrective prompt on malformed JSON, Celery dead-letter, checkpoint prevents redundant LLM calls |
+| `test_integration.py` | 36 | Full Docker stack — happy path, failure simulation, semantic dedup, multi-agent output, queue assignment |
+| **Total** | **108** | **72 unit · 36 integration** |
+
+Notable: class-level mock patching ensures no test method can accidentally hit the real Gemini API. A `test_checkpoint_resume` case manually corrupts the research node checkpoint to simulate a mid-pipeline crash and verifies the enrichment node is skipped on retry (LLM call count = 0).
 
 ---
 
-## Architecture Decisions and Tradeoffs
+## Architecture Decisions & Tradeoffs
 
-| Decision | Reasoning |
-|----------|-----------|
-| ChromaDB for semantic dedup | Hash based dedup misses paraphrased spam. Vector similarity catches it |
-| LangGraph over pure Celery chains | Explicit state machine with named nodes. Each node is idempotent and individually resumable on failure, unlike chained tasks where a mid-chain failure requires replaying the entire chain |
-| JSONB Checkpointing | Graph execution state is persisted as JSON (`pipeline_checkpoint`) in PostgreSQL, allowing the pipeline to resume exactly where it left off on worker crash |
-| 422 Unprocessable Entity for Duplicates | While `409 Conflict` is semantically correct for resources, `422` is used because the exact duplicate check intercepts the request early in the FastAPI validation layer. In a production V2 API, this would be refactored to a `409` |
-| Gemini over OpenAI | Free tier sufficient for demo. Removes cost barrier when running locally |
-| Deterministic scoring (post-LLM) | LLMs are non-deterministic. Same lead must always produce the same score and route to the same queue. Pure Python math ensures this |
-| Dual SQLAlchemy engines | FastAPI uses asyncpg (async). Celery uses psycopg2 (sync). Prevents event loop conflicts |
-| Mock enrichment fallback | Pipeline runs without API keys. No setup friction |
+| Decision | Why |
+|---|---|
+| **5 LangGraph agents over a single prompt** | Each node has one responsibility, one schema, and independent error handling. A failure in research doesn't touch enrichment output. |
+| **Sequential agents (not parallel)** | `categorization_agent_node` requires both intent (from enrichment) and company context (from research). The dependency chain forces the order. |
+| **Deterministic Python scoring** | LLMs are non-deterministic. The same lead must always route to the same queue. Scoring and routing use zero LLM calls. |
+| **Lightweight JSONB checkpoint over full LangGraph persistence** | Prevents redundant LLM calls on Celery retry without the operational overhead of a PostgreSQL-backed LangGraph checkpointer. Solves the practical problem for this scope. |
+| **Dual SQLAlchemy engines** | FastAPI requires asyncpg; Celery is synchronous. Mixing them causes event loop conflicts found in development. |
+| **ChromaDB fail-open** | Semantic dedup is a bonus safety net. If it's down, leads pass through. Availability matters more than perfect dedup. |
+| **Dead-letter over silent fallback** | A lead routed on fake AI output is worse than an unrouted lead. Dead-lettering with `flag_for_review` ensures a human makes the call when AI fails. |
+| **422 for duplicates (not 409)** | Duplicate check intercepts early in the FastAPI validation layer. `409 Conflict` would be semantically correct in a V2 API — documented as a known tradeoff. |
+| **Gemini Flash over GPT-4** | Free tier sufficient. Removes the cost barrier for local evaluation. |
+| **Mock fallback** | Full pipeline runs without an API key — zero setup friction for evaluators. |
 
-### Known Limitations
-- ChromaDB runs in-process in Docker with file persistence. A production deployment would use a dedicated ChromaDB server or a managed vector database
-- Celery retry counters are stored in Redis. If Redis restarts, in-flight retry counters reset
-- Scoring weights are hardcoded. A production system would load them from a config store for A/B testing
+---
+
+## Known Limitations
+
+- **ChromaDB is ephemeral in Docker** — the vector store resets on container restart. Production would use a dedicated server or pgvector co-located with PostgreSQL
+- **Celery retry counters reset on Redis restart** — in-flight counters are lost if Redis crashes. Full LangGraph PostgreSQL checkpointing would address this at the cost of additional infrastructure
+- **Scoring weights are hardcoded** — production would load weights from a config store to enable A/B testing without deploys
+- **No Flower UI** — Celery monitoring is via `/admin/queue-status`; a Flower container would give richer real-time task visibility
+- **Legacy edge functions** — `should_score_or_skip` and `should_route_or_end` remain in the codebase from the pre-LangGraph monolithic design; both have stale node references and are unused
 
 ---
 
 ## What I Would Improve With More Time
 
-- Replace in-process ChromaDB with a dedicated persistent vector store (Pinecone, Weaviate)
-- Add Flower for real time Celery task monitoring and visibility
-- Build a webhook retry confirmation system with delivery receipts
+- Replace in-memory ChromaDB with a persistent Pinecone or pgvector deployment
+- Add Flower for real-time Celery task monitoring and dashboards
+- Make scoring weights configurable via admin API for A/B experimentation without deploys
 - Add per-tenant routing configuration for multi-customer deployments
-- Add Prometheus metrics endpoint for observability
-- Make scoring weights configurable via admin API for experimentation
-- Add rate limiting per API key rather than global limits
-- Clean up unused legacy routing functions (`should_score_or_skip`, `should_route_or_end`) left over from the pre-LangGraph monolithic pipeline
+- Add a Prometheus metrics endpoint for observability dashboards
+- Implement webhook retry confirmation with delivery receipts
+- Refactor duplicate rejection to return `409 Conflict` with a `duplicate_of` field pointing to the original lead ID
+- Remove the legacy unused conditional edge functions
 
 ---
-*Developed for the Geta.ai Backend Engineering assignment.*
+
+*Built for the Geta.ai Backend Engineering Intern assignment.*
