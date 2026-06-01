@@ -23,63 +23,13 @@ This system was designed to handle all of that gracefully:
 
 ## System Architecture
 
-```mermaid
-flowchart TD
-    A["▸ Lead Input\nREST API · CSV Batch · Webhook"] --> B
-
-    subgraph VAL ["⚙️ Validation Layer — synchronous · < 10ms · no LLM"]
-        B{"Valid lead?"}
-    end
-
-    B -->|"✗ spam / duplicate / malformed"| C[("❖ rejected_leads\nPostgreSQL")]
-    B -->|"✓ passes"| D["✉ Celery Queue\nRedis"]
-
-    D --> GRAPH
-
-    subgraph GRAPH ["⚙️ LangGraph — 5-Node Multi-Agent Pipeline (async Celery worker)"]
-        E1["◦ enrichment_agent_node\nGemini Flash\nintent · urgency · pain_points"]
-        --> E2["◦ research_agent_node\nGemini Flash\ncompany_type · ai_summary"]
-        --> E3["◦ categorization_agent_node\nGemini Flash\nlead_category"]
-        --> E4["◦ scoring_agent_node\nPure Python · 0–100\nsignal_breakdown"]
-        --> E5["◦ routing_agent_node\nPure Python\nthreshold rules"]
-    end
-
-    E5 -->|"≥ 70"| S["+ SALES_QUEUE"]
-    E5 -->|"40–69"| N["~ NURTURE_QUEUE"]
-    E5 -->|"< 40"| AR["- ARCHIVE"]
-
-    subgraph DB ["❖ PostgreSQL — full audit trail"]
-        T["leads · enrichments · scores\nrouting_decisions · execution_logs"]
-    end
-
-    GRAPH --> DB
-```
+![Detailed Pipeline Architecture](docs/detailed_architecture.png)
 
 ---
 
 ## Pipeline State Machine
 
-```mermaid
-stateDiagram-v2
-    direction LR
-
-    [*] --> RECEIVED : lead submitted
-    RECEIVED --> VALIDATED : passes all checks
-    VALIDATED --> ENRICHED : 3 AI agents complete
-    ENRICHED --> SCORED : Python scoring engine
-    SCORED --> ROUTED : threshold routing
-    ROUTED --> COMPLETE : persisted + queued
-
-    RECEIVED --> REJECTED : spam · exact duplicate · invalid fields
-    VALIDATED --> FAILED : LLM agent error
-    ENRICHED --> FAILED : scoring error
-    FAILED --> VALIDATED : Celery retry\n(checkpoint skips completed nodes)
-    FAILED --> DEAD_LETTER : all retries exhausted\nflag_for_review = true
-
-    COMPLETE --> [*]
-    REJECTED --> [*]
-    DEAD_LETTER --> [*]
-```
+![Pipeline State Machine](docs/pipeline_architecture.png)
 
 ---
 
@@ -109,26 +59,7 @@ flowchart LR
 
 ## Failure Recovery — Two-Level System
 
-```mermaid
-flowchart TD
-    A["LLM Call"] --> B{"Response OK?"}
-    B -->|Yes| Z["✓ Continue to next node"]
-
-    B -->|"Timeout / 429 / 503"| C{"Attempt < 3?"}
-    C -->|Yes| D["⧖ Exponential backoff\n2s → 4s → 8s + jitter"]
-    D --> A
-    C -->|No| G
-
-    B -->|"Malformed JSON"| E["✎ Corrective prompt retry\n'Respond ONLY with JSON object'"]
-    E --> F{"Fixed?"}
-    F -->|Yes| Z
-    F -->|No| G
-
-    G["! error_node triggered\nraises AgentFailureException"] --> H{"Celery retries < 3?"}
-    H -->|Yes| I["↻ Task restart\n① Read pipeline_checkpoint\n② Skip completed nodes\n③ Re-run only failed node"]
-    I --> A
-    H -->|No| J["✗ DEAD_LETTER\nflag_for_review = true\nflag_reason = which node failed\nvisible at /admin/failures"]
-```
+![Failure Recovery](docs/Geta.ai%20Enterprise%20Lead%20Processing%20Architecture%20-%20visual%20selection.png)
 
 **Level 1 — LLM Call Retries** (within a single Celery task):
 ```python
