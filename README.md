@@ -3,8 +3,8 @@
 > **Reliability first. AI second.**  
 > A production-grade, fault-tolerant lead pipeline with a **5-agent LangGraph orchestration** (Enrichment → Research → Categorization → Scoring → Routing), semantic spam detection via ChromaDB, and a two-level exponential backoff retry system — built as a Geta.ai engineering intern assignment.
 
-**Live Demo:** `https://ailead-production.up.railway.app/dashboard`  
-**API Docs:** `https://ailead-production.up.railway.app/docs`
+**Live Demo:** [https://ailead-production.up.railway.app/dashboard](https://ailead-production.up.railway.app/dashboard)  
+**API Docs:** [https://ailead-production.up.railway.app/docs](https://ailead-production.up.railway.app/docs)
 
 ---
 
