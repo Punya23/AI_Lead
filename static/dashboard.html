@@ -1452,8 +1452,8 @@
 
             <div style="background:var(--bg-secondary); border:1px solid var(--border); border-radius:8px; padding:12px; font-family:monospace; font-size:11px; overflow-x:auto; line-height:1.6; margin-bottom:12px;">
               <div style="color:var(--text-muted);">name,email,company,message,source</div>
-              <div style="color:var(--green);">Priya,priya@apexsec.io,ApexSec,Enterprise dynamic AI migration,csv_upload</div>
-              <div style="color:var(--green);">Amit,amit@minishop.com,MiniShop,Small custom shop CRM migration,csv_upload</div>
+              <div style="color:var(--green);">Aarav,aarav@apexsec.io,ApexSec,Enterprise dynamic AI migration,csv_upload</div>
+              <div style="color:var(--green);">Rohan,rohan@minishop.com,MiniShop,Small custom shop CRM migration,csv_upload</div>
               <div style="color:var(--rose);">Null,null@mailinator.com,FailCo,Malformed database structural data,csv_upload</div>
             </div>
             
@@ -1888,8 +1888,8 @@
     async function simulateCSVUpload() {
       const rid = Math.floor(Math.random() * 9000) + 1000;
       const csvData = `name,email,company,message,source
-Priya ${rid},priya${rid}@apexsec.io,ApexSec ${rid},Enterprise dynamic AI migration Ref: ${rid},csv_upload
-Amit ${rid},amit${rid}@minishop.com,MiniShop ${rid},Small custom shop CRM migration Ref: ${rid},csv_upload
+Aarav ${rid},aarav${rid}@apexsec.io,ApexSec ${rid},Enterprise dynamic AI migration Ref: ${rid},csv_upload
+Rohan ${rid},rohan${rid}@minishop.com,MiniShop ${rid},Small custom shop CRM migration Ref: ${rid},csv_upload
 Null ${rid},null${rid}@mailinator.com,FailCo ${rid},Malformed database structural data Ref: ${rid},csv_upload`;
 
       const blob = new Blob([csvData], { type: 'text/csv' });
@@ -1925,8 +1925,8 @@ Null ${rid},null${rid}@mailinator.com,FailCo ${rid},Malformed database structura
     
     function downloadCSVTemplate() {
         const csvData = `name,email,company,message,source
-Priya,priya@apexsec.io,ApexSec,Enterprise dynamic AI migration,csv_upload
-Amit,amit@minishop.com,MiniShop,Small custom shop CRM migration,csv_upload
+Aarav,aarav@apexsec.io,ApexSec,Enterprise dynamic AI migration,csv_upload
+Rohan,rohan@minishop.com,MiniShop,Small custom shop CRM migration,csv_upload
 Null,null@mailinator.com,FailCo,Malformed database structural data,csv_upload`;
         
         const blob = new Blob([csvData], { type: 'text/csv' });
@@ -2213,7 +2213,23 @@ Null,null@mailinator.com,FailCo,Malformed database structural data,csv_upload`;
       if (status === 'SCORED') {
         setStage('s-routed', 'active');
       }
-    }
+      if (status === 'FAILED' || status === 'REJECTED') {
+        // Find the active stage and mark it as failed
+        const stages = ['state-received', 'state-validated', 'state-enriched', 'state-scored', 'state-routed'];
+        for (let s of stages) {
+          const el = document.getElementById(s);
+          if (el && el.className.includes('active')) {
+            el.className = 'state-node failed';
+          }
+        }
+        
+        showError(status, lead.failure_reason || "Pipeline failed");
+        addEvent('pipeline', status + ' ✗', 'error');
+        
+        const bar = document.getElementById('pipeline-progress');
+        bar.style.background = 'var(--rose)';
+        bar.style.width = '100%';
+      }
 
     // ========================================
     // PIPELINE UI HELPERS
@@ -2223,7 +2239,9 @@ Null,null@mailinator.com,FailCo,Malformed database structural data,csv_upload`;
         const el = document.getElementById(id);
         if (el) el.className = 'state-node';
       });
-      document.getElementById('pipeline-progress').style.width = '0%';
+      const bar = document.getElementById('pipeline-progress');
+      bar.style.width = '0%';
+      bar.style.background = 'var(--accent)';
     }
 
     function setStage(id, state) {

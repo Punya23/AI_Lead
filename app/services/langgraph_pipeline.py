@@ -213,13 +213,32 @@ def routing_agent_node(state: PipelineState) -> PipelineState:
 
 
 def error_node(state: PipelineState) -> PipelineState:
-    """Handles node-level failures by propagating to Celery."""
+    """Handles node-level failures by propagating to Celery or falling back."""
     log = logger.bind(lead_id=state["lead_id"], node="error_node")
-    log.error(f"LangGraph Error Node triggered: {state['error']}")
     
-    # We DO NOT set status to FAILED here. We raise to Celery.
-    # Celery will retry. If max retries are exceeded, Celery will dead-letter it.
+    # Check if this is an LLM enrichment error on the final retry attempt
+    is_llm_error = state.get("error") and any(
+        x in state["error"] for x in ["enrichment_agent", "research_agent", "categorization_agent"]
+    )
+    
+    if is_llm_error and state.get("retry_count", 0) >= 2:
+        log.warning(f"Max retries reached for LLM. Using deterministic fallback. Error was: {state['error']}")
+        from app.services.llm_client import get_fallback_enrichment
+        state["enrichment_result"] = get_fallback_enrichment()
+        state["current_status"] = "ENRICHED"
+        state["error"] = None
+        return state
+        
+    log.error(f"LangGraph Error Node triggered: {state['error']}")
+    # We raise to Celery. Celery will retry or dead-letter it.
     raise Exception(state["error"])
+
+
+def check_error_fallback(state: PipelineState) -> str:
+    """If error was cleared by fallback, continue to scoring."""
+    if not state.get("error"):
+        return "continue"
+    return END
 
 
 # --- Conditional Edge Functions ---
@@ -279,6 +298,9 @@ def build_pipeline_graph() -> Any:
     
     # Load Existing (if skipped)
     graph.add_conditional_edges("load_enrichment", check_agent_error, {"continue": "scoring_agent", "error_handler": "error_node"})
+
+    # Error node fallback routing
+    graph.add_conditional_edges("error_node", check_error_fallback, {"continue": "scoring_agent", END: END})
 
     # Scoring & Routing with Error Routing
     graph.add_conditional_edges("scoring_agent", check_agent_error, {"continue": "routing_agent", "error_handler": "error_node"})
