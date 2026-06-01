@@ -210,27 +210,36 @@ def _execute_llm_call(prompt: str, schema_class: type[BaseModel], lead_id: str |
         except LLMRateLimitError as e:
             last_error = e
             if attempt < max_attempts:
-                time.sleep(max(delay, e.retry_after or 5))
+                # Use standard exponential backoff delay, or the requested retry_after header
+                time.sleep(max(delay, e.retry_after or 2.0))
                 delay *= LLM_RETRY_POLICY["backoff_multiplier"]
 
         except Exception as e:
-            # Handle genai ClientErrors (we import locally to avoid hard dependency if using mock)
+            error_str = str(e)
+            is_rate_limit = False
+            
             try:
-                from google.genai.errors import ClientError
-                if isinstance(e, ClientError):
-                    if e.code == 429:
-                        last_error = LLMRateLimitError(lead_id=lead_id, retry_after=5)
-                        if attempt < max_attempts:
-                            time.sleep(max(delay, 5))
-                            delay *= LLM_RETRY_POLICY["backoff_multiplier"]
-                            continue
+                from google.genai.errors import APIError
+                if isinstance(e, APIError) and (e.code == 429 or e.status == 429):
+                    is_rate_limit = True
             except ImportError:
                 pass
                 
-            last_error = LLMMalformedResponseError(lead_id=lead_id, raw_response=str(e))
-            if attempt < max_attempts:
-                time.sleep(delay)
-                delay *= LLM_RETRY_POLICY["backoff_multiplier"]
+            if not is_rate_limit and ("429" in error_str or "Too Many Requests" in error_str):
+                is_rate_limit = True
+                
+            if is_rate_limit:
+                last_error = LLMRateLimitError(lead_id=lead_id, retry_after=5)
+                if attempt < max_attempts:
+                    # For rate limits specifically, wait a bit longer initially
+                    time.sleep(max(delay, 2.0))
+                    delay *= LLM_RETRY_POLICY["backoff_multiplier"]
+            else:
+                # Catch-all for non-429 API errors (e.g. 500, 503)
+                last_error = LLMError(lead_id=lead_id, message=f"Unhandled API error: {type(e).__name__}: {error_str}")
+                if attempt < max_attempts:
+                    time.sleep(delay)
+                    delay *= LLM_RETRY_POLICY["backoff_multiplier"]
 
     logger.error("LLM agent failed after all retries", lead_id=lead_id, agent=agent_name)
     raise last_error
