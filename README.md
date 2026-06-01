@@ -48,7 +48,7 @@ flowchart LR
         --> E["◦ routing_agent_node\n─────────────────\nInputs: score\nOutputs: queue assignment\n         routing_reason"]
     end
 
-    A & B & C -->|"on error"| ERR["! error_node\nraises exception\n→ Celery retry\nCheckpoint prevents\nre-running done nodes"]
+    A & B & C & D & E -->|"on error"| ERR["! error_node\nraises exception\n→ Celery retry\nCheckpoint prevents\nre-running done nodes"]
 
     E --> OUT(["Queue\nAssigned"])
 ```
